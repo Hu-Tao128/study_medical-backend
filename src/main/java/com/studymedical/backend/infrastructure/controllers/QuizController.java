@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -99,6 +100,20 @@ public class QuizController {
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
         roleAuthorizationService.requireSelfOrRole(currentUser, request.userId(), User.Role.ADMIN, User.Role.TEACHER);
+
+        Quiz quiz = quizMongoRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
+
+        boolean canAccessQuiz = roleAuthorizationService.canReadByVisibility(
+                currentUser,
+                quiz.getCreatedBy(),
+                toSecurityVisibility(quiz.getVisibility()),
+                quiz.getGroupId()
+        );
+
+        if (!canAccessQuiz) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Sin acceso a este quiz");
+        }
 
         SubmitQuizUseCase.SubmitQuizResult result = submitQuizUseCase.execute(
                 request.userId(),
