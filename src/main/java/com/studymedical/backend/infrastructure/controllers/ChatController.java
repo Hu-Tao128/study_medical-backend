@@ -35,6 +35,7 @@ public class ChatController {
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
         roleAuthorizationService.requireSelfOrRole(currentUser, request.senderId(), User.Role.ADMIN);
+        roleAuthorizationService.requireGroupAccess(currentUser, roomId);
 
         ChatMessageBucket.Message message = ChatMessageBucket.Message.builder()
                 .senderId(request.senderId())
@@ -52,7 +53,7 @@ public class ChatController {
             @PathVariable UUID roomId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        roleAuthorizationService.requireAnyRole(currentUser, User.Role.STUDENT, User.Role.TEACHER, User.Role.ADMIN);
+        roleAuthorizationService.requireGroupAccess(currentUser, roomId);
         return ResponseEntity.ok(getChatHistoryUseCase.execute(roomId));
     }
 

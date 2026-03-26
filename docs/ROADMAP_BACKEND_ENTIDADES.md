@@ -22,16 +22,19 @@
   - `SendMessageUseCaseTest` (bucket reutilizado/rotado)
   - `RlsPolicySqlTest` (presencia de politicas RLS clave en SQL)
 - Se agrego `RoleAuthorizationService` y se aplico autorizacion uniforme por rol/ownership en endpoints de contenido y chat.
+- Se implemento visibilidad real de contenido `private | group | public` en `flashcards`, `quizzes` y `clinical_cases`.
+- Se agrego `groupId` para contenido de alcance grupal y filtrado de lectura por visibilidad + membresia.
+- Se reforzo acceso de chat por pertenencia a grupo (room_id) para enviar y leer historial.
 
 ### En progreso
-- Endurecer reglas de autorizacion por pertenencia a grupo para chat y contenido con visibilidad `group`.
+- Validar reglas de negocio por rol dentro de grupo (ej: teacher de institucion pero student en un grupo especifico).
 
 ### Siguiente
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades.
 - Agregar tests de integracion conectados a infraestructura real para:
   - RLS + ownership en `users`, `memberships`, `user_progress` con Supabase test project
-  - Flujos end-to-end de quiz y actualizacion de progreso
-  - Flujo completo de chat con multiples buckets y orden temporal
+  - Flujos end-to-end de quiz y actualizacion de progreso con visibilidad `private/group/public`
+  - Flujo completo de chat con multiples buckets, orden temporal y acceso por membresia
 - Agregar migraciones incrementales para evolucion de esquemas sin depender de `ddl-auto`.
 - Documentar contrato de API actualizado para frontend Flutter.
 

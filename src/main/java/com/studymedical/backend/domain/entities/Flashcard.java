@@ -34,6 +34,11 @@ public class Flashcard {
     private Difficulty difficulty;
 
     @Builder.Default
+    private Visibility visibility = Visibility.PRIVATE;
+
+    private UUID groupId;
+
+    @Builder.Default
     private List<String> tags = new ArrayList<>();
 
     @Builder.Default
@@ -51,6 +56,12 @@ public class Flashcard {
         if (difficulty == null) {
             difficulty = Difficulty.MEDIUM;
         }
+        if (visibility == null) {
+            visibility = Visibility.PRIVATE;
+        }
+        if (visibility != Visibility.GROUP) {
+            groupId = null;
+        }
         if (createdAt == null) {
             createdAt = Instant.now();
         }
@@ -60,5 +71,11 @@ public class Flashcard {
         EASY,
         MEDIUM,
         HARD
+    }
+
+    public enum Visibility {
+        PRIVATE,
+        GROUP,
+        PUBLIC
     }
 }

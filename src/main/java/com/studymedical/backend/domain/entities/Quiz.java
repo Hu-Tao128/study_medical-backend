@@ -35,6 +35,8 @@ public class Quiz {
     @Builder.Default
     private Visibility visibility = Visibility.PRIVATE;
 
+    private UUID groupId;
+
     @Builder.Default
     private boolean aiGenerated = false;
 
@@ -49,6 +51,9 @@ public class Quiz {
     public void initializeDefaults() {
         if (visibility == null) {
             visibility = Visibility.PRIVATE;
+        }
+        if (visibility != Visibility.GROUP) {
+            groupId = null;
         }
         if (createdAt == null) {
             createdAt = Instant.now();

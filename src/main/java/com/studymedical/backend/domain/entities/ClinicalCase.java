@@ -36,8 +36,16 @@ public class ClinicalCase {
     @Indexed
     private UUID topicId;
 
+    @Indexed
+    private UUID createdBy;
+
     @Builder.Default
     private Flashcard.Difficulty difficulty = Flashcard.Difficulty.MEDIUM;
+
+    @Builder.Default
+    private Visibility visibility = Visibility.PRIVATE;
+
+    private UUID groupId;
 
     @Builder.Default
     private boolean aiGenerated = false;
@@ -53,6 +61,12 @@ public class ClinicalCase {
     public void initializeDefaults() {
         if (difficulty == null) {
             difficulty = Flashcard.Difficulty.MEDIUM;
+        }
+        if (visibility == null) {
+            visibility = Visibility.PRIVATE;
+        }
+        if (visibility != Visibility.GROUP) {
+            groupId = null;
         }
         if (createdAt == null) {
             createdAt = Instant.now();
@@ -73,5 +87,11 @@ public class ClinicalCase {
         private Integer correctAnswer;
 
         private String explanation;
+    }
+
+    public enum Visibility {
+        PRIVATE,
+        GROUP,
+        PUBLIC
     }
 }

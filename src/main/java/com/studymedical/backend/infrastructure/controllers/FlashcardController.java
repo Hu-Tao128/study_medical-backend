@@ -41,18 +41,37 @@ public class FlashcardController {
                 .question(request.question())
                 .answer(request.answer())
                 .difficulty(request.difficulty())
+                .visibility(request.visibility())
+                .groupId(request.groupId())
                 .tags(request.tags())
                 .aiGenerated(request.aiGenerated() != null && request.aiGenerated())
                 .aiModel(request.aiModel())
                 .aiSource(request.aiSource())
                 .aiEmbeddingsId(request.aiEmbeddingsId())
                 .build();
+        if (request.visibility() == Flashcard.Visibility.GROUP) {
+            roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
+        }
+
         return ResponseEntity.ok(createFlashcardUseCase.execute(flashcard));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<Flashcard>> getByTopic(@PathVariable UUID topicId) {
-        return ResponseEntity.ok(getFlashcardsByTopicUseCase.execute(topicId));
+    public ResponseEntity<List<Flashcard>> getByTopic(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable UUID topicId
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        List<Flashcard> filtered = getFlashcardsByTopicUseCase.execute(topicId).stream()
+                .filter(card -> roleAuthorizationService.canReadByVisibility(
+                        currentUser,
+                        card.getCreatedBy(),
+                        toSecurityVisibility(card.getVisibility()),
+                        card.getGroupId()
+                ))
+                .toList();
+        return ResponseEntity.ok(filtered);
     }
 
     public record CreateFlashcardRequest(
@@ -60,11 +79,24 @@ public class FlashcardController {
             @NotBlank String question,
             @NotBlank String answer,
             Flashcard.Difficulty difficulty,
+            Flashcard.Visibility visibility,
+            UUID groupId,
             List<String> tags,
             Boolean aiGenerated,
             String aiModel,
             String aiSource,
             String aiEmbeddingsId
     ) {
+    }
+
+    private RoleAuthorizationService.QuizVisibility toSecurityVisibility(Flashcard.Visibility visibility) {
+        if (visibility == null) {
+            return RoleAuthorizationService.QuizVisibility.PRIVATE;
+        }
+        return switch (visibility) {
+            case PRIVATE -> RoleAuthorizationService.QuizVisibility.PRIVATE;
+            case GROUP -> RoleAuthorizationService.QuizVisibility.GROUP;
+            case PUBLIC -> RoleAuthorizationService.QuizVisibility.PUBLIC;
+        };
     }
 }

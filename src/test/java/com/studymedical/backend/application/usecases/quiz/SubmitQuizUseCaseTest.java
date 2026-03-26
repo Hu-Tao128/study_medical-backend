@@ -60,7 +60,7 @@ class SubmitQuizUseCaseTest {
 
         Quiz.QuizQuestion q1 = new Quiz.QuizQuestion("Q1", List.of("A", "B"), 0, "E1", false);
         Quiz.QuizQuestion q2 = new Quiz.QuizQuestion("Q2", List.of("A", "B"), 1, "E2", false);
-        Quiz quiz = new Quiz(quizId, "Quiz", topicId, userId, List.of(q1, q2), Quiz.Visibility.PRIVATE, false, null, null, null, null);
+        Quiz quiz = new Quiz(quizId, "Quiz", topicId, userId, List.of(q1, q2), Quiz.Visibility.PRIVATE, null, false, null, null, null, null);
 
         User user = User.builder().id(userId).authId(UUID.randomUUID()).email("u@test.com").role(User.Role.STUDENT).build();
         Topic topic = Topic.builder().id(topicId).name("Anatomia").build();

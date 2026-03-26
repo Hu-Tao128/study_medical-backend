@@ -55,17 +55,36 @@ public class QuizController {
                 .createdBy(currentUser.getId())
                 .questions(questions)
                 .visibility(request.visibility())
+                .groupId(request.groupId())
                 .aiGenerated(request.aiGenerated() != null && request.aiGenerated())
                 .aiModel(request.aiModel())
                 .aiSource(request.aiSource())
                 .aiEmbeddingsId(request.aiEmbeddingsId())
                 .build();
+
+        if (request.visibility() == Quiz.Visibility.GROUP) {
+            roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
+        }
+
         return ResponseEntity.ok(generateQuizFromAiUseCase.execute(quizDraft));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<Quiz>> getByTopic(@PathVariable UUID topicId) {
-        return ResponseEntity.ok(quizMongoRepository.findByTopicId(topicId));
+    public ResponseEntity<List<Quiz>> getByTopic(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable UUID topicId
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        List<Quiz> filtered = quizMongoRepository.findByTopicId(topicId).stream()
+                .filter(quiz -> roleAuthorizationService.canReadByVisibility(
+                        currentUser,
+                        quiz.getCreatedBy(),
+                        toSecurityVisibility(quiz.getVisibility()),
+                        quiz.getGroupId()
+                ))
+                .toList();
+        return ResponseEntity.ok(filtered);
     }
 
     @PostMapping("/{quizId}/submit")
@@ -94,6 +113,7 @@ public class QuizController {
             @NotNull UUID topicId,
             List<GenerateQuizQuestionRequest> questions,
             Quiz.Visibility visibility,
+            UUID groupId,
             Boolean aiGenerated,
             String aiModel,
             String aiSource,
@@ -108,5 +128,16 @@ public class QuizController {
             String explanation,
             Boolean aiGenerated
     ) {
+    }
+
+    private RoleAuthorizationService.QuizVisibility toSecurityVisibility(Quiz.Visibility visibility) {
+        if (visibility == null) {
+            return RoleAuthorizationService.QuizVisibility.PRIVATE;
+        }
+        return switch (visibility) {
+            case PRIVATE -> RoleAuthorizationService.QuizVisibility.PRIVATE;
+            case GROUP -> RoleAuthorizationService.QuizVisibility.GROUP;
+            case PUBLIC -> RoleAuthorizationService.QuizVisibility.PUBLIC;
+        };
     }
 }

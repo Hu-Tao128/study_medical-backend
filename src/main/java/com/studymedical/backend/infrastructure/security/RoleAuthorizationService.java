@@ -2,7 +2,9 @@ package com.studymedical.backend.infrastructure.security;
 
 import com.studymedical.backend.application.usecases.auth.AuthUserPayload;
 import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
+import com.studymedical.backend.domain.entities.Membership;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.domain.repositories.MembershipRepository;
 import com.studymedical.backend.domain.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -16,15 +18,18 @@ import java.util.UUID;
 public class RoleAuthorizationService {
 
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final AuthTokenPayloadExtractor tokenPayloadExtractor;
     private final CreateUserUseCase createUserUseCase;
 
     public RoleAuthorizationService(
             UserRepository userRepository,
+            MembershipRepository membershipRepository,
             AuthTokenPayloadExtractor tokenPayloadExtractor,
             CreateUserUseCase createUserUseCase
     ) {
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.tokenPayloadExtractor = tokenPayloadExtractor;
         this.createUserUseCase = createUserUseCase;
     }
@@ -48,5 +53,54 @@ public class RoleAuthorizationService {
             return;
         }
         requireAnyRole(user, roles);
+    }
+
+    public void requireGroupAccess(User user, UUID groupId) {
+        if (groupId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "groupId es requerido para visibilidad GROUP");
+        }
+
+        if (user.getRole() == User.Role.ADMIN) {
+            return;
+        }
+
+        UUID userId = user.getId();
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario sin id interno");
+        }
+
+        Membership membership = membershipRepository.findByUser_IdAndGroup_Id(userId, groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No pertenece al grupo"));
+
+        if (membership.getRole() == Membership.Role.STUDENT && user.getRole() == User.Role.TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Docente sin rol de docente en el grupo");
+        }
+    }
+
+    public boolean canReadByVisibility(User user, UUID contentOwnerId, QuizVisibility visibility, UUID groupId) {
+        if (visibility == null || visibility == QuizVisibility.PUBLIC) {
+            return true;
+        }
+
+        if (user.getRole() == User.Role.ADMIN) {
+            return true;
+        }
+
+        UUID userId = user.getId();
+        if (userId == null) {
+            return false;
+        }
+
+        if (visibility == QuizVisibility.PRIVATE) {
+            return contentOwnerId != null && contentOwnerId.equals(userId);
+        }
+
+        return groupId != null && membershipRepository.findByUser_IdAndGroup_Id(userId, groupId).isPresent();
+    }
+
+    public enum QuizVisibility {
+        PRIVATE,
+        GROUP,
+        PUBLIC
     }
 }

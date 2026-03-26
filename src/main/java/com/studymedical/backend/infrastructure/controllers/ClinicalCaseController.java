@@ -52,19 +52,40 @@ public class ClinicalCaseController {
                 .diagnosis(request.diagnosis())
                 .questions(questions)
                 .topicId(request.topicId())
+                .createdBy(currentUser.getId())
                 .difficulty(request.difficulty())
+                .visibility(request.visibility())
+                .groupId(request.groupId())
                 .aiGenerated(request.aiGenerated() != null && request.aiGenerated())
                 .aiModel(request.aiModel())
                 .aiSource(request.aiSource())
                 .aiEmbeddingsId(request.aiEmbeddingsId())
                 .build();
+
+        if (request.visibility() == ClinicalCase.Visibility.GROUP) {
+            roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
+        }
+
         clinicalCase.initializeDefaults();
         return ResponseEntity.ok(clinicalCaseMongoRepository.save(clinicalCase));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<ClinicalCase>> getByTopic(@PathVariable UUID topicId) {
-        return ResponseEntity.ok(clinicalCaseMongoRepository.findByTopicId(topicId));
+    public ResponseEntity<List<ClinicalCase>> getByTopic(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable UUID topicId
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        List<ClinicalCase> filtered = clinicalCaseMongoRepository.findByTopicId(topicId).stream()
+                .filter(clinicalCase -> roleAuthorizationService.canReadByVisibility(
+                        currentUser,
+                        clinicalCase.getCreatedBy(),
+                        toSecurityVisibility(clinicalCase.getVisibility()),
+                        clinicalCase.getGroupId()
+                ))
+                .toList();
+        return ResponseEntity.ok(filtered);
     }
 
     public record CreateClinicalCaseRequest(
@@ -75,6 +96,8 @@ public class ClinicalCaseController {
             List<CreateCaseQuestionRequest> questions,
             @NotNull UUID topicId,
             Flashcard.Difficulty difficulty,
+            ClinicalCase.Visibility visibility,
+            UUID groupId,
             Boolean aiGenerated,
             String aiModel,
             String aiSource,
@@ -88,5 +111,16 @@ public class ClinicalCaseController {
             Integer correctAnswer,
             String explanation
     ) {
+    }
+
+    private RoleAuthorizationService.QuizVisibility toSecurityVisibility(ClinicalCase.Visibility visibility) {
+        if (visibility == null) {
+            return RoleAuthorizationService.QuizVisibility.PRIVATE;
+        }
+        return switch (visibility) {
+            case PRIVATE -> RoleAuthorizationService.QuizVisibility.PRIVATE;
+            case GROUP -> RoleAuthorizationService.QuizVisibility.GROUP;
+            case PUBLIC -> RoleAuthorizationService.QuizVisibility.PUBLIC;
+        };
     }
 }
