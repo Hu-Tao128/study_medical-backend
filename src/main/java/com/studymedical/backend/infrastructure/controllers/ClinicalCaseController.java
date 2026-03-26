@@ -4,6 +4,7 @@ import com.studymedical.backend.domain.entities.ClinicalCase;
 import com.studymedical.backend.domain.entities.Flashcard;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.ClinicalCaseMongoRepository;
+import com.studymedical.backend.infrastructure.dto.response.ClinicalCaseResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ public class ClinicalCaseController {
     private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<ClinicalCase> createCase(
+    public ResponseEntity<ClinicalCaseResponseDto> createCase(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody CreateClinicalCaseRequest request
@@ -67,23 +68,25 @@ public class ClinicalCaseController {
         }
 
         clinicalCase.initializeDefaults();
-        return ResponseEntity.ok(clinicalCaseMongoRepository.save(clinicalCase));
+        ClinicalCase created = clinicalCaseMongoRepository.save(clinicalCase);
+        return ResponseEntity.ok(ClinicalCaseResponseDto.fromEntity(created));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<ClinicalCase>> getByTopic(
+    public ResponseEntity<List<ClinicalCaseResponseDto>> getByTopic(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID topicId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        List<ClinicalCase> filtered = clinicalCaseMongoRepository.findByTopicId(topicId).stream()
+        List<ClinicalCaseResponseDto> filtered = clinicalCaseMongoRepository.findByTopicId(topicId).stream()
                 .filter(clinicalCase -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
                         clinicalCase.getCreatedBy(),
                         toSecurityVisibility(clinicalCase.getVisibility()),
                         clinicalCase.getGroupId()
                 ))
+                .map(ClinicalCaseResponseDto::fromEntity)
                 .toList();
         return ResponseEntity.ok(filtered);
     }

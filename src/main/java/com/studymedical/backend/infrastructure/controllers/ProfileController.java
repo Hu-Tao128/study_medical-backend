@@ -4,6 +4,7 @@ import com.studymedical.backend.application.usecases.auth.AuthUserPayload;
 import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
 import com.studymedical.backend.application.usecases.user.UpdateProfileUseCase;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.dto.response.ProfileResponseDto;
 import com.studymedical.backend.infrastructure.security.AuthTokenPayloadExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,9 +12,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
-import java.util.UUID;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/profile")
@@ -32,23 +32,24 @@ public class ProfileController {
         try {
             AuthUserPayload payload = tokenPayloadExtractor.extract(jwt, authHeader);
             User user = createUserUseCase.execute(payload);
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("id", user.getId());
-            response.put("authId", user.getAuthId());
-            response.put("email", user.getEmail());
-            response.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : "");
-            response.put("photoUrl", user.getPhotoUrl() != null ? user.getPhotoUrl() : "");
-            response.put("role", user.getRole().name());
-            response.put("institutionId", user.getInstitution() != null ? user.getInstitution().getId() : null);
-            response.put("preferredLanguage", user.getPreferredLanguage());
-            response.put("theme", user.getTheme());
-            response.put("level", user.getLevel());
-            response.put("semester", user.getSemester());
-            response.put("career", user.getCareer());
-            response.put("lastLoginAt", user.getLastLoginAt());
-            response.put("lastActiveAt", user.getLastActiveAt());
-            response.put("createdAt", user.getCreatedAt());
-            response.put("updatedAt", user.getUpdatedAt());
+            ProfileResponseDto response = new ProfileResponseDto(
+                    user.getId(),
+                    user.getAuthId(),
+                    user.getEmail(),
+                    user.getDisplayName() != null ? user.getDisplayName() : "",
+                    user.getPhotoUrl() != null ? user.getPhotoUrl() : "",
+                    user.getRole().name(),
+                    user.getInstitution() != null ? user.getInstitution().getId() : null,
+                    user.getPreferredLanguage(),
+                    user.getTheme(),
+                    user.getLevel(),
+                    user.getSemester(),
+                    user.getCareer(),
+                    user.getLastLoginAt(),
+                    user.getLastActiveAt(),
+                    user.getCreatedAt(),
+                    user.getUpdatedAt()
+            );
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Token invalido"));
@@ -77,18 +78,27 @@ public class ProfileController {
                                     request.career()
                             )
                     )
-                    .map(user -> ResponseEntity.ok(Map.of(
-                            "id", user.getId(),
-                            "email", user.getEmail(),
-                            "displayName", user.getDisplayName() != null ? user.getDisplayName() : "",
-                            "photoUrl", user.getPhotoUrl() != null ? user.getPhotoUrl() : "",
-                            "preferredLanguage", user.getPreferredLanguage(),
-                            "theme", user.getTheme(),
-                            "level", user.getLevel(),
-                            "semester", user.getSemester(),
-                            "career", user.getCareer(),
-                            "updatedAt", user.getUpdatedAt()
-                    )))
+                    .map(user -> {
+                        ProfileResponseDto response = new ProfileResponseDto(
+                                user.getId(),
+                                user.getAuthId(),
+                                user.getEmail(),
+                                user.getDisplayName() != null ? user.getDisplayName() : "",
+                                user.getPhotoUrl() != null ? user.getPhotoUrl() : "",
+                                user.getRole().name(),
+                                user.getInstitution() != null ? user.getInstitution().getId() : null,
+                                user.getPreferredLanguage(),
+                                user.getTheme(),
+                                user.getLevel(),
+                                user.getSemester(),
+                                user.getCareer(),
+                                user.getLastLoginAt(),
+                                user.getLastActiveAt(),
+                                user.getCreatedAt(),
+                                user.getUpdatedAt()
+                        );
+                        return ResponseEntity.ok(response);
+                    })
                     .orElseGet(() -> ResponseEntity.status(404).body(Map.of("error", "Usuario no encontrado")));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Token invalido"));

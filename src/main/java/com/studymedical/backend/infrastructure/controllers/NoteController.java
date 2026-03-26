@@ -3,6 +3,7 @@ package com.studymedical.backend.infrastructure.controllers;
 import com.studymedical.backend.domain.entities.Note;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.NoteMongoRepository;
+import com.studymedical.backend.infrastructure.dto.response.NoteResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -25,7 +26,7 @@ public class NoteController {
     private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<Note> createNote(
+    public ResponseEntity<NoteResponseDto> createNote(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody UpsertNoteRequest request
@@ -45,7 +46,8 @@ public class NoteController {
                 .aiSource(request.aiSource())
                 .build();
         note.initializeOnCreate();
-        return ResponseEntity.ok(noteMongoRepository.save(note));
+        Note created = noteMongoRepository.save(note);
+        return ResponseEntity.ok(NoteResponseDto.fromEntity(created));
     }
 
     @PutMapping("/{id}")
@@ -66,20 +68,24 @@ public class NoteController {
                     existing.setAiSummary(request.aiSummary());
                     existing.setAiEmbeddingsId(request.aiEmbeddingsId());
                     existing.initializeOnUpdate();
-                    return ResponseEntity.ok(noteMongoRepository.save(existing));
+                    Note updated = noteMongoRepository.save(existing);
+                    return ResponseEntity.ok(NoteResponseDto.fromEntity(updated));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Note>> getByUser(
+    public ResponseEntity<List<NoteResponseDto>> getByUser(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID userId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
         roleAuthorizationService.requireSelfOrRole(currentUser, userId, User.Role.ADMIN);
-        return ResponseEntity.ok(noteMongoRepository.findByUserId(userId));
+        List<NoteResponseDto> notes = noteMongoRepository.findByUserId(userId).stream()
+                .map(NoteResponseDto::fromEntity)
+                .toList();
+        return ResponseEntity.ok(notes);
     }
 
     public record UpsertNoteRequest(

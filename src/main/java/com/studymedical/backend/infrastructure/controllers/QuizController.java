@@ -5,6 +5,7 @@ import com.studymedical.backend.application.usecases.quiz.SubmitQuizUseCase;
 import com.studymedical.backend.domain.entities.Quiz;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.QuizMongoRepository;
+import com.studymedical.backend.infrastructure.dto.response.QuizResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -29,7 +30,7 @@ public class QuizController {
     private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping("/ai-generate")
-    public ResponseEntity<Quiz> generateQuiz(
+    public ResponseEntity<QuizResponseDto> generateQuiz(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody GenerateQuizRequest request
@@ -66,23 +67,25 @@ public class QuizController {
             roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
         }
 
-        return ResponseEntity.ok(generateQuizFromAiUseCase.execute(quizDraft));
+        Quiz created = generateQuizFromAiUseCase.execute(quizDraft);
+        return ResponseEntity.ok(QuizResponseDto.fromEntity(created));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<Quiz>> getByTopic(
+    public ResponseEntity<List<QuizResponseDto>> getByTopic(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID topicId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        List<Quiz> filtered = quizMongoRepository.findByTopicId(topicId).stream()
+        List<QuizResponseDto> filtered = quizMongoRepository.findByTopicId(topicId).stream()
                 .filter(quiz -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
                         quiz.getCreatedBy(),
                         toSecurityVisibility(quiz.getVisibility()),
                         quiz.getGroupId()
                 ))
+                .map(QuizResponseDto::fromEntity)
                 .toList();
         return ResponseEntity.ok(filtered);
     }

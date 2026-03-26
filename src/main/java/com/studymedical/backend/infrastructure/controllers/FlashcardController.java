@@ -4,6 +4,7 @@ import com.studymedical.backend.application.usecases.flashcard.CreateFlashcardUs
 import com.studymedical.backend.application.usecases.flashcard.GetFlashcardsByTopicUseCase;
 import com.studymedical.backend.domain.entities.Flashcard;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.dto.response.FlashcardResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -27,7 +28,7 @@ public class FlashcardController {
     private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<Flashcard> createFlashcard(
+    public ResponseEntity<FlashcardResponseDto> createFlashcard(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody CreateFlashcardRequest request
@@ -53,23 +54,25 @@ public class FlashcardController {
             roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
         }
 
-        return ResponseEntity.ok(createFlashcardUseCase.execute(flashcard));
+        Flashcard created = createFlashcardUseCase.execute(flashcard);
+        return ResponseEntity.ok(FlashcardResponseDto.fromEntity(created));
     }
 
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<Flashcard>> getByTopic(
+    public ResponseEntity<List<FlashcardResponseDto>> getByTopic(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID topicId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        List<Flashcard> filtered = getFlashcardsByTopicUseCase.execute(topicId).stream()
+        List<FlashcardResponseDto> filtered = getFlashcardsByTopicUseCase.execute(topicId).stream()
                 .filter(card -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
                         card.getCreatedBy(),
                         toSecurityVisibility(card.getVisibility()),
                         card.getGroupId()
                 ))
+                .map(FlashcardResponseDto::fromEntity)
                 .toList();
         return ResponseEntity.ok(filtered);
     }

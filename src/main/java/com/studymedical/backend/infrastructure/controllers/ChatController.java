@@ -4,6 +4,7 @@ import com.studymedical.backend.application.usecases.chat.GetChatHistoryUseCase;
 import com.studymedical.backend.application.usecases.chat.SendMessageUseCase;
 import com.studymedical.backend.domain.entities.ChatMessageBucket;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.dto.response.ChatMessageBucketResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -27,7 +28,7 @@ public class ChatController {
     private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping("/{roomId}/messages")
-    public ResponseEntity<ChatMessageBucket> sendMessage(
+    public ResponseEntity<ChatMessageBucketResponseDto> sendMessage(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID roomId,
@@ -43,18 +44,22 @@ public class ChatController {
                 .type(request.type())
                 .build();
 
-        return ResponseEntity.ok(sendMessageUseCase.execute(roomId, message));
+        ChatMessageBucket bucket = sendMessageUseCase.execute(roomId, message);
+        return ResponseEntity.ok(ChatMessageBucketResponseDto.fromEntity(bucket));
     }
 
     @GetMapping("/{roomId}/history")
-    public ResponseEntity<List<ChatMessageBucket.Message>> getHistory(
+    public ResponseEntity<List<ChatMessageBucketResponseDto.MessageDto>> getHistory(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable UUID roomId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
         roleAuthorizationService.requireGroupAccess(currentUser, roomId);
-        return ResponseEntity.ok(getChatHistoryUseCase.execute(roomId));
+        List<ChatMessageBucketResponseDto.MessageDto> messages = getChatHistoryUseCase.execute(roomId).stream()
+                .map(ChatMessageBucketResponseDto.MessageDto::fromEntity)
+                .toList();
+        return ResponseEntity.ok(messages);
     }
 
     public record SendMessageRequest(
