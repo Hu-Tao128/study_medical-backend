@@ -29,10 +29,15 @@
 - Se implemento validacion de rol efectivo dentro del grupo para creacion de contenido `GROUP` (`requireGroupTeacherOrAdmin`).
 - Se ampliaron pruebas unitarias de autorizacion para visibilidad `private/group/public` en `RoleAuthorizationServiceTest`.
 - Se incorporo control de acceso por visibilidad en `submitQuiz` para bloquear intentos sobre quizzes no visibles para el usuario.
+- Se agregaron tests de integracion con Testcontainers:
+  - `SubmitQuizUseCaseIntegrationTest` (PostgreSQL + Mongo)
+  - `ChatBucketIntegrationTest` (Mongo bucket pattern)
+- Se detecto que Gradle 8.10.2 falla con Java 25 en este entorno; para tests se ejecuto con `JAVA_HOME=/usr/lib/jvm/java-17-temurin-jdk`.
 
 ### En progreso
 - Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
 - Actualizar documentacion funcional del contrato API para visibilidad y reglas de acceso.
+- Parametrizar CI para fijar Java 17 y evitar fallos por runtime Java 25 en build local/runner.
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
