@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SubmitQuizUseCaseIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+            .withInitScript("testcontainers/init-vector.sql");
 
     @Container
     static MongoDBContainer mongo = new MongoDBContainer("mongo:7.0");
