@@ -64,7 +64,7 @@ Flujo de autenticación:
 El backend es responsable de:
 - Validar tokens JWT
 - Mapear usuario externo a modelo interno
-- Controlar acceso por roles (estudiante, instructor, admin)
+- Controlar acceso por roles (student, teacher, admin)
 
 ---
 
@@ -76,12 +76,13 @@ El sistema utiliza dos bases de datos complementarias:
 
 Datos estructurados que requieren integridad referencial:
 
-- `users` — Perfiles de usuario
-- `roles` — Roles y permisos
+- `users` — Identidad y configuracion del usuario
+- `institutions` — Instituciones academicas
 - `groups` — Grupos de estudio
-- `memberships` — Membresías a grupos
-- `study_sessions` — Metadatos de sesiones
-- `progress_metrics` — Métricas agregadas
+- `memberships` — Membresias y rol por grupo
+- `topics` — Estructura academica jerarquica
+- `user_progress` — Progreso por usuario y tema
+- `embeddings` — Metadatos vectoriales con pgvector
 
 ### MongoDB
 

@@ -38,6 +38,30 @@ http://localhost:8080/api/v1
 
 ---
 
+### Sincronizar sesion Firebase/Supabase
+Sincroniza el usuario autenticado en `users` usando el token Bearer recibido.
+
+**Endpoint:** `POST /api/v1/auth/sync-session`
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response (200):**
+```json
+{
+  "id": "f0dd5f74-2dc3-4f66-8ae2-6a57a9f2d829",
+  "authId": "5f94dc6f-4f7f-4b31-a5d2-46de2925f9a9",
+  "email": "user@example.com",
+  "displayName": "Nombre de Usuario",
+  "role": "STUDENT",
+  "lastLoginAt": "2026-03-26T00:25:40"
+}
+```
+
+---
+
 ### Profile (Usuario actual)
 Obtiene el perfil del usuario autenticado. El usuario se sincroniza automáticamente en PostgreSQL la primera vez que accede.
 
@@ -74,6 +98,32 @@ Authorization: Bearer <jwt_token>
   "service": "Study Medical Backend"
 }
 ```
+
+---
+
+## Endpoints de Contenido
+
+### Flashcards
+- `POST /api/v1/flashcards`
+- `GET /api/v1/flashcards/topic/{topicId}`
+
+### Quizzes
+- `POST /api/v1/quizzes/ai-generate`
+- `GET /api/v1/quizzes/topic/{topicId}`
+- `POST /api/v1/quizzes/{quizId}/submit`
+
+### Casos clinicos
+- `POST /api/v1/cases`
+- `GET /api/v1/cases/topic/{topicId}`
+
+### Notas
+- `POST /api/v1/notes`
+- `PUT /api/v1/notes/{id}`
+- `GET /api/v1/notes/user/{userId}`
+
+### Chat
+- `POST /api/v1/chat/{roomId}/messages`
+- `GET /api/v1/chat/{roomId}/history`
 
 ---
 
