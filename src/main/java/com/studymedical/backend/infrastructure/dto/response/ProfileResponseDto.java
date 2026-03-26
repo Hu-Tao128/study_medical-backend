@@ -1,6 +1,6 @@
 package com.studymedical.backend.infrastructure.dto.response;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ProfileResponseDto(
@@ -13,12 +13,12 @@ public record ProfileResponseDto(
         UUID institutionId,
         String preferredLanguage,
         String theme,
-        Integer level,
+        String level,
         Integer semester,
         String career,
-        Instant lastLoginAt,
-        Instant lastActiveAt,
-        Instant createdAt,
-        Instant updatedAt
+        LocalDateTime lastLoginAt,
+        LocalDateTime lastActiveAt,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
 }

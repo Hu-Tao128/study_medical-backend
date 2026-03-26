@@ -64,7 +64,7 @@ public class QuizController {
                 .build();
 
         if (request.visibility() == Quiz.Visibility.GROUP) {
-            roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
+            roleAuthorizationService.requireGroupTeacherOrAdmin(currentUser, request.groupId());
         }
 
         Quiz created = generateQuizFromAiUseCase.execute(quizDraft);

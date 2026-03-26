@@ -56,12 +56,36 @@ public class RoleAuthorizationService {
     }
 
     public void requireGroupAccess(User user, UUID groupId) {
+        Membership membership = resolveMembership(user, groupId);
+        if (membership == null && user.getRole() != User.Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No pertenece al grupo");
+        }
+    }
+
+    public void requireGroupTeacherOrAdmin(User user, UUID groupId) {
+        if (user.getRole() == User.Role.ADMIN) {
+            return;
+        }
+
+        requireAnyRole(user, User.Role.TEACHER);
+
+        Membership membership = resolveMembership(user, groupId);
+        if (membership == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No pertenece al grupo");
+        }
+
+        if (membership.getRole() != Membership.Role.TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Debe ser teacher en el grupo para crear contenido grupal");
+        }
+    }
+
+    private Membership resolveMembership(User user, UUID groupId) {
         if (groupId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "groupId es requerido para visibilidad GROUP");
         }
 
         if (user.getRole() == User.Role.ADMIN) {
-            return;
+            return null;
         }
 
         UUID userId = user.getId();
@@ -69,12 +93,7 @@ public class RoleAuthorizationService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario sin id interno");
         }
 
-        Membership membership = membershipRepository.findByUser_IdAndGroup_Id(userId, groupId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No pertenece al grupo"));
-
-        if (membership.getRole() == Membership.Role.STUDENT && user.getRole() == User.Role.TEACHER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Docente sin rol de docente en el grupo");
-        }
+        return membershipRepository.findByUser_IdAndGroup_Id(userId, groupId).orElse(null);
     }
 
     public boolean canReadByVisibility(User user, UUID contentOwnerId, QuizVisibility visibility, UUID groupId) {

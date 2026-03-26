@@ -25,9 +25,11 @@
 - Se implemento visibilidad real de contenido `private | group | public` en `flashcards`, `quizzes` y `clinical_cases`.
 - Se agrego `groupId` para contenido de alcance grupal y filtrado de lectura por visibilidad + membresia.
 - Se reforzo acceso de chat por pertenencia a grupo (room_id) para enviar y leer historial.
+- Se verificaron cambios recientes de DTOs de response y se corrigio consistencia de `ProfileResponseDto` con el modelo real (`String level`, `LocalDateTime`).
+- Se implemento validacion de rol efectivo dentro del grupo para creacion de contenido `GROUP` (`requireGroupTeacherOrAdmin`).
 
 ### En progreso
-- Validar reglas de negocio por rol dentro de grupo (ej: teacher de institucion pero student en un grupo especifico).
+- Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
@@ -46,6 +48,7 @@
   - Flujo completo de chat con multiples buckets, orden temporal y acceso por membresia
 - Agregar migraciones incrementales para evolucion de esquemas sin depender de `ddl-auto`.
 - Documentar contrato de API actualizado para frontend Flutter.
+- Agregar tests unitarios adicionales de autorizacion por visibilidad para controllers (private/group/public).
 
 ## Migrations aplicadas en Supabase
 - `core_schema_structures_v1`

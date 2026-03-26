@@ -64,7 +64,7 @@ public class ClinicalCaseController {
                 .build();
 
         if (request.visibility() == ClinicalCase.Visibility.GROUP) {
-            roleAuthorizationService.requireGroupAccess(currentUser, request.groupId());
+            roleAuthorizationService.requireGroupTeacherOrAdmin(currentUser, request.groupId());
         }
 
         clinicalCase.initializeDefaults();

@@ -78,7 +78,7 @@ public class ProfileController {
                                     request.career()
                             )
                     )
-                    .map(user -> {
+                    .<ResponseEntity<?>>map(user -> {
                         ProfileResponseDto response = new ProfileResponseDto(
                                 user.getId(),
                                 user.getAuthId(),
