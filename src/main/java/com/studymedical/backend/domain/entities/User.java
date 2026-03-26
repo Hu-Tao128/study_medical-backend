@@ -3,6 +3,7 @@ package com.studymedical.backend.domain.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -14,47 +15,83 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @Column(length = 255)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    @Column(unique = true)
-    private String authId;
+    @Column(name = "auth_id", unique = true, nullable = false)
+    private UUID authId;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String email;
 
+    @Column(name = "display_name")
     private String displayName;
 
+    @Column(name = "photo_url")
     private String photoUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Role role;
 
-    private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "institution_id",
+            foreignKey = @ForeignKey(name = "fk_users_institution")
+    )
+    private Institution institution;
 
+    @Column(name = "preferred_language", nullable = false, length = 10)
+    private String preferredLanguage;
+
+    @Column(nullable = false, length = 20)
+    private String theme;
+
+    private String level;
+
+    private Integer semester;
+
+    private String career;
+
+    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    private boolean enabled;
+    @Column(name = "last_active_at")
+    private LocalDateTime lastActiveAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        enabled = true;
+        if (updatedAt == null) {
+            updatedAt = createdAt;
+        }
         if (role == null) {
             role = Role.STUDENT;
+        }
+        if (preferredLanguage == null || preferredLanguage.isBlank()) {
+            preferredLanguage = "es";
+        }
+        if (theme == null || theme.isBlank()) {
+            theme = "system";
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public enum Role {
         STUDENT,
-        INSTRUCTOR,
+        TEACHER,
         ADMIN
     }
 }

@@ -1,7 +1,9 @@
 package com.studymedical.backend.infrastructure.controllers;
 
+import com.studymedical.backend.application.usecases.auth.AuthUserPayload;
+import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
 import com.studymedical.backend.domain.entities.User;
-import com.studymedical.backend.domain.services.UserService;
+import com.studymedical.backend.infrastructure.security.AuthTokenPayloadExtractor;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,22 +14,26 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class DevAuthController {
 
-    private final UserService userService;
+    private final CreateUserUseCase createUserUseCase;
+    private final AuthTokenPayloadExtractor tokenPayloadExtractor;
     private final String jwtSecret;
     private final long jwtExpiration;
     private final boolean devMode;
 
     public DevAuthController(
-            UserService userService,
+            CreateUserUseCase createUserUseCase,
+            AuthTokenPayloadExtractor tokenPayloadExtractor,
             @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.expiration}") long jwtExpiration,
             @Value("${app.dev-mode:false}") boolean devMode) {
-        this.userService = userService;
+        this.createUserUseCase = createUserUseCase;
+        this.tokenPayloadExtractor = tokenPayloadExtractor;
         this.jwtSecret = jwtSecret;
         this.jwtExpiration = jwtExpiration;
         this.devMode = devMode;
@@ -39,34 +45,62 @@ public class DevAuthController {
             return ResponseEntity.status(403).body(Map.of("error", "Dev login only available in dev mode"));
         }
 
-        String userId = request.getOrDefault("userId", "dev-user-" + System.currentTimeMillis());
+        String requestedUserId = request.getOrDefault("userId", UUID.randomUUID().toString());
+        UUID normalizedAuthId = createUserUseCase.normalizeAuthId(requestedUserId);
+
         String email = request.getOrDefault("email", "dev@example.com");
         String name = request.getOrDefault("name", "Dev User");
 
-        userService.createOrUpdateUser(userId, email, name, null);
+        User user = createUserUseCase.execute(
+                new AuthUserPayload(normalizedAuthId.toString(), email, name, null)
+        );
 
-        String token = generateToken(userId, email);
+        String token = generateToken(user.getAuthId().toString(), user.getEmail(), user.getDisplayName());
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", token,
                 "tokenType", "Bearer",
                 "expiresIn", jwtExpiration / 1000,
                 "user", Map.of(
-                        "id", userId,
-                        "email", email,
-                        "displayName", name,
-                        "role", "STUDENT"
+                        "id", user.getId(),
+                        "authId", user.getAuthId(),
+                        "email", user.getEmail(),
+                        "displayName", user.getDisplayName(),
+                        "role", user.getRole().name()
                 )
         ));
     }
 
-    private String generateToken(String userId, String email) {
+    @PostMapping("/sync-session")
+    public ResponseEntity<?> syncSession(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authorization header requerido"));
+        }
+
+        try {
+            AuthUserPayload payload = tokenPayloadExtractor.extract(null, authHeader);
+            User user = createUserUseCase.execute(payload);
+            return ResponseEntity.ok(Map.of(
+                    "id", user.getId(),
+                    "authId", user.getAuthId(),
+                    "email", user.getEmail(),
+                    "displayName", user.getDisplayName(),
+                    "role", user.getRole().name(),
+                    "lastLoginAt", user.getLastLoginAt()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token invalido"));
+        }
+    }
+
+    private String generateToken(String authId, String email, String name) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
-                .subject(userId)
+                .subject(authId)
                 .claim("email", email)
+                .claim("name", name)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
