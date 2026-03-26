@@ -107,14 +107,26 @@ Authorization: Bearer <jwt_token>
 - `POST /api/v1/flashcards`
 - `GET /api/v1/flashcards/topic/{topicId}`
 
+`POST /api/v1/flashcards` soporta visibilidad:
+- `PRIVATE`: solo owner
+- `GROUP`: requiere `groupId` y rol teacher en ese grupo para crear
+- `PUBLIC`: visible para usuarios autenticados
+
 ### Quizzes
 - `POST /api/v1/quizzes/ai-generate`
 - `GET /api/v1/quizzes/topic/{topicId}`
 - `POST /api/v1/quizzes/{quizId}/submit`
 
+`POST /api/v1/quizzes/{quizId}/submit` valida:
+- owner para quizzes `PRIVATE`
+- membresia para quizzes `GROUP`
+- acceso libre autenticado para quizzes `PUBLIC`
+
 ### Casos clinicos
 - `POST /api/v1/cases`
 - `GET /api/v1/cases/topic/{topicId}`
+
+`POST /api/v1/cases` con visibilidad `GROUP` exige `groupId` y rol teacher en ese grupo.
 
 ### Notas
 - `POST /api/v1/notes`

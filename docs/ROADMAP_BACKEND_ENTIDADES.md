@@ -32,6 +32,7 @@
 
 ### En progreso
 - Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
+- Actualizar documentacion funcional del contrato API para visibilidad y reglas de acceso.
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
