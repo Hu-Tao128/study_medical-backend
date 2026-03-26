@@ -3,6 +3,9 @@ package com.studymedical.backend.infrastructure.controllers;
 import com.studymedical.backend.application.usecases.chat.GetChatHistoryUseCase;
 import com.studymedical.backend.application.usecases.chat.SendMessageUseCase;
 import com.studymedical.backend.domain.entities.ChatMessageBucket;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +24,7 @@ public class ChatController {
     @PostMapping("/{roomId}/messages")
     public ResponseEntity<ChatMessageBucket> sendMessage(
             @PathVariable UUID roomId,
-            @RequestBody SendMessageRequest request
+            @Valid @RequestBody SendMessageRequest request
     ) {
         ChatMessageBucket.Message message = ChatMessageBucket.Message.builder()
                 .senderId(request.senderId())
@@ -38,8 +41,8 @@ public class ChatController {
     }
 
     public record SendMessageRequest(
-            UUID senderId,
-            String text,
+            @NotNull UUID senderId,
+            @NotBlank String text,
             ChatMessageBucket.MessageType type
     ) {
     }

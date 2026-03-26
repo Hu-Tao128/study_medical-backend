@@ -8,6 +8,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.SecretKey;
@@ -72,13 +74,20 @@ public class DevAuthController {
     }
 
     @PostMapping("/sync-session")
-    public ResponseEntity<?> syncSession(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<?> syncSession(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Authorization header requerido"));
         }
 
+        if (!devMode && jwt == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "JWT no validado por el resource server"));
+        }
+
         try {
-            AuthUserPayload payload = tokenPayloadExtractor.extract(null, authHeader);
+            AuthUserPayload payload = tokenPayloadExtractor.extract(jwt, authHeader);
             User user = createUserUseCase.execute(payload);
             return ResponseEntity.ok(Map.of(
                     "id", user.getId(),

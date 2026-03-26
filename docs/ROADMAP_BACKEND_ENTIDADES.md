@@ -15,17 +15,22 @@
   - `GenerateQuizFromAi`, `SubmitQuiz`
   - `SendMessage`, `GetChatHistory`
 - Se crearon controladores REST para `/profile`, `/flashcards`, `/quizzes`, `/cases`, `/notes`, `/chat` y flujo `/auth/sync-session`.
+- Se endurecio el flujo de sesion: en no-dev, `/auth/sync-session` exige JWT validado por `oauth2ResourceServer`.
+- Se agregaron DTOs de request + `@Valid` en controladores de contenido para no exponer entidades directamente.
+- Se agregaron pruebas para casos criticos:
+  - `SubmitQuizUseCaseTest` (calculo y persistencia de progreso)
+  - `SendMessageUseCaseTest` (bucket reutilizado/rotado)
+  - `RlsPolicySqlTest` (presencia de politicas RLS clave en SQL)
 
 ### En progreso
-- Endurecer validacion de sesiones Firebase/Supabase en un unico flujo 100% validado por `oauth2ResourceServer` sin fallback de decode manual en entornos no-dev.
 - Agregar validaciones de negocio por rol en controladores (`STUDENT`, `TEACHER`, `ADMIN`) de forma uniforme.
 
 ### Siguiente
-- Crear DTOs de request/response para evitar exponer entidades directamente en endpoints.
-- Agregar tests de integracion para:
-  - RLS + ownership en `users`, `memberships`, `user_progress`
-  - Flujos de quiz y actualizacion de progreso
-  - Bucket pattern de chat (`count <= 50`)
+- Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades.
+- Agregar tests de integracion conectados a infraestructura real para:
+  - RLS + ownership en `users`, `memberships`, `user_progress` con Supabase test project
+  - Flujos end-to-end de quiz y actualizacion de progreso
+  - Flujo completo de chat con multiples buckets y orden temporal
 - Agregar migraciones incrementales para evolucion de esquemas sin depender de `ddl-auto`.
 - Documentar contrato de API actualizado para frontend Flutter.
 
