@@ -33,11 +33,11 @@
   - `SubmitQuizUseCaseIntegrationTest` (PostgreSQL + Mongo)
   - `ChatBucketIntegrationTest` (Mongo bucket pattern)
 - Se detecto que Gradle 8.10.2 falla con Java 25 en este entorno; para tests se ejecuto con `JAVA_HOME=/usr/lib/jvm/java-17-temurin-jdk`.
+- Se agrego workflow CI en GitHub Actions fijando Java 17 (`.github/workflows/ci.yml`) para asegurar ejecucion estable de tests en push/PR.
 
 ### En progreso
 - Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
 - Actualizar documentacion funcional del contrato API para visibilidad y reglas de acceso.
-- Parametrizar CI para fijar Java 17 y evitar fallos por runtime Java 25 en build local/runner.
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
