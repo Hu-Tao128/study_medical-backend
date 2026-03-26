@@ -21,9 +21,10 @@
   - `SubmitQuizUseCaseTest` (calculo y persistencia de progreso)
   - `SendMessageUseCaseTest` (bucket reutilizado/rotado)
   - `RlsPolicySqlTest` (presencia de politicas RLS clave en SQL)
+- Se agrego `RoleAuthorizationService` y se aplico autorizacion uniforme por rol/ownership en endpoints de contenido y chat.
 
 ### En progreso
-- Agregar validaciones de negocio por rol en controladores (`STUDENT`, `TEACHER`, `ADMIN`) de forma uniforme.
+- Endurecer reglas de autorizacion por pertenencia a grupo para chat y contenido con visibilidad `group`.
 
 ### Siguiente
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades.

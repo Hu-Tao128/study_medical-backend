@@ -2,12 +2,16 @@ package com.studymedical.backend.infrastructure.controllers;
 
 import com.studymedical.backend.domain.entities.ClinicalCase;
 import com.studymedical.backend.domain.entities.Flashcard;
+import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.ClinicalCaseMongoRepository;
+import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,9 +23,17 @@ import java.util.UUID;
 public class ClinicalCaseController {
 
     private final ClinicalCaseMongoRepository clinicalCaseMongoRepository;
+    private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<ClinicalCase> createCase(@Valid @RequestBody CreateClinicalCaseRequest request) {
+    public ResponseEntity<ClinicalCase> createCase(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody CreateClinicalCaseRequest request
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
+
         List<ClinicalCase.CaseQuestion> questions = request.questions() == null
                 ? List.of()
                 : request.questions().stream()

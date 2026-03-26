@@ -3,11 +3,15 @@ package com.studymedical.backend.infrastructure.controllers;
 import com.studymedical.backend.application.usecases.flashcard.CreateFlashcardUseCase;
 import com.studymedical.backend.application.usecases.flashcard.GetFlashcardsByTopicUseCase;
 import com.studymedical.backend.domain.entities.Flashcard;
+import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +24,20 @@ public class FlashcardController {
 
     private final CreateFlashcardUseCase createFlashcardUseCase;
     private final GetFlashcardsByTopicUseCase getFlashcardsByTopicUseCase;
+    private final RoleAuthorizationService roleAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<Flashcard> createFlashcard(@Valid @RequestBody CreateFlashcardRequest request) {
+    public ResponseEntity<Flashcard> createFlashcard(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody CreateFlashcardRequest request
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
+
         Flashcard flashcard = Flashcard.builder()
                 .topicId(request.topicId())
-                .createdBy(request.createdBy())
+                .createdBy(currentUser.getId())
                 .question(request.question())
                 .answer(request.answer())
                 .difficulty(request.difficulty())
@@ -45,7 +57,6 @@ public class FlashcardController {
 
     public record CreateFlashcardRequest(
             @NotNull UUID topicId,
-            @NotNull UUID createdBy,
             @NotBlank String question,
             @NotBlank String answer,
             Flashcard.Difficulty difficulty,
