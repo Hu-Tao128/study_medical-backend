@@ -29,8 +29,17 @@
 ### En progreso
 - Validar reglas de negocio por rol dentro de grupo (ej: teacher de institucion pero student en un grupo especifico).
 
+### Completado
+- Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
+  - `ProfileResponseDto`
+  - `FlashcardResponseDto`
+  - `QuizResponseDto` (incluye `QuizQuestionDto`)
+  - `ClinicalCaseResponseDto` (incluye `CaseQuestionDto`)
+  - `NoteResponseDto`
+  - `ChatMessageBucketResponseDto` (incluye `MessageDto`)
+- Actualizados controllers para usar los nuevos DTOs de response en lugar de entidades directas.
+
 ### Siguiente
-- Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades.
 - Agregar tests de integracion conectados a infraestructura real para:
   - RLS + ownership en `users`, `memberships`, `user_progress` con Supabase test project
   - Flujos end-to-end de quiz y actualizacion de progreso con visibilidad `private/group/public`
