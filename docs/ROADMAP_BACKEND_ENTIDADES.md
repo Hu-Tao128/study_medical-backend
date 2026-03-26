@@ -34,10 +34,12 @@
   - `ChatBucketIntegrationTest` (Mongo bucket pattern)
 - Se detecto que Gradle 8.10.2 falla con Java 25 en este entorno; para tests se ejecuto con `JAVA_HOME=/usr/lib/jvm/java-17-temurin-jdk`.
 - Se agrego workflow CI en GitHub Actions fijando Java 17 (`.github/workflows/ci.yml`) para asegurar ejecucion estable de tests en push/PR.
+- Se agrego test de integracion opcional para RLS de Supabase (`SupabaseRlsIntegrationTest`) usando JDBC y `request.jwt.claims`.
 
 ### En progreso
 - Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
 - Actualizar documentacion funcional del contrato API para visibilidad y reglas de acceso.
+- Completar tests de integracion de Supabase para `memberships` y `user_progress` (requiere env vars).
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
@@ -50,13 +52,10 @@
 - Actualizados controllers para usar los nuevos DTOs de response en lugar de entidades directas.
 
 ### Siguiente
-- Agregar tests de integracion conectados a infraestructura real para:
-  - RLS + ownership en `users`, `memberships`, `user_progress` con Supabase test project
-  - Flujos end-to-end de quiz y actualizacion de progreso con visibilidad `private/group/public`
-  - Flujo completo de chat con multiples buckets, orden temporal y acceso por membresia
+- Agregar tests de integracion end-to-end de quiz y chat con visibilidad `private/group/public` y roles.
 - Agregar migraciones incrementales para evolucion de esquemas sin depender de `ddl-auto`.
 - Documentar contrato de API actualizado para frontend Flutter.
-- Agregar tests unitarios adicionales de autorizacion por visibilidad para controllers (private/group/public).
+- Agregar tests unitarios de controllers con MockMvc para visibilidad (private/group/public).
 
 ## Migrations aplicadas en Supabase
 - `core_schema_structures_v1`
