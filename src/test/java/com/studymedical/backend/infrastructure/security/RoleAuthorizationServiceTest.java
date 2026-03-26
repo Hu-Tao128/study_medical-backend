@@ -16,6 +16,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -76,5 +78,86 @@ class RoleAuthorizationServiceTest {
     void shouldAllowAdminWithoutMembershipLookup() {
         User admin = User.builder().id(UUID.randomUUID()).role(User.Role.ADMIN).build();
         assertDoesNotThrow(() -> roleAuthorizationService.requireGroupTeacherOrAdmin(admin, UUID.randomUUID()));
+    }
+
+    @Test
+    void shouldAllowReadWhenVisibilityIsPublic() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        boolean allowed = roleAuthorizationService.canReadByVisibility(
+                student,
+                UUID.randomUUID(),
+                RoleAuthorizationService.QuizVisibility.PUBLIC,
+                UUID.randomUUID()
+        );
+
+        assertTrue(allowed);
+    }
+
+    @Test
+    void shouldAllowReadWhenVisibilityIsPrivateAndOwnerMatches() {
+        UUID userId = UUID.randomUUID();
+        User student = User.builder().id(userId).role(User.Role.STUDENT).build();
+
+        boolean allowed = roleAuthorizationService.canReadByVisibility(
+                student,
+                userId,
+                RoleAuthorizationService.QuizVisibility.PRIVATE,
+                null
+        );
+
+        assertTrue(allowed);
+    }
+
+    @Test
+    void shouldDenyReadWhenVisibilityIsPrivateAndOwnerDoesNotMatch() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        boolean allowed = roleAuthorizationService.canReadByVisibility(
+                student,
+                UUID.randomUUID(),
+                RoleAuthorizationService.QuizVisibility.PRIVATE,
+                null
+        );
+
+        assertFalse(allowed);
+    }
+
+    @Test
+    void shouldAllowReadWhenVisibilityIsGroupAndUserIsMember() {
+        UUID userId = UUID.randomUUID();
+        UUID groupId = UUID.randomUUID();
+        User student = User.builder().id(userId).role(User.Role.STUDENT).build();
+
+        when(membershipRepository.findByUser_IdAndGroup_Id(userId, groupId))
+                .thenReturn(Optional.of(Membership.builder().role(Membership.Role.STUDENT).build()));
+
+        boolean allowed = roleAuthorizationService.canReadByVisibility(
+                student,
+                UUID.randomUUID(),
+                RoleAuthorizationService.QuizVisibility.GROUP,
+                groupId
+        );
+
+        assertTrue(allowed);
+    }
+
+    @Test
+    void shouldDenyReadWhenVisibilityIsGroupAndUserIsNotMember() {
+        UUID userId = UUID.randomUUID();
+        UUID groupId = UUID.randomUUID();
+        User student = User.builder().id(userId).role(User.Role.STUDENT).build();
+
+        when(membershipRepository.findByUser_IdAndGroup_Id(userId, groupId))
+                .thenReturn(Optional.empty());
+
+        boolean allowed = roleAuthorizationService.canReadByVisibility(
+                student,
+                UUID.randomUUID(),
+                RoleAuthorizationService.QuizVisibility.GROUP,
+                groupId
+        );
+
+        assertFalse(allowed);
     }
 }

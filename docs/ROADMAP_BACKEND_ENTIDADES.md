@@ -27,9 +27,11 @@
 - Se reforzo acceso de chat por pertenencia a grupo (room_id) para enviar y leer historial.
 - Se verificaron cambios recientes de DTOs de response y se corrigio consistencia de `ProfileResponseDto` con el modelo real (`String level`, `LocalDateTime`).
 - Se implemento validacion de rol efectivo dentro del grupo para creacion de contenido `GROUP` (`requireGroupTeacherOrAdmin`).
+- Se ampliaron pruebas unitarias de autorizacion para visibilidad `private/group/public` en `RoleAuthorizationServiceTest`.
 
 ### En progreso
 - Endurecer reglas por tipo de contenido para `GROUP` (teacher del grupo para escribir, miembro para leer) en todos los endpoints faltantes.
+- Incorporar validacion de pertenencia de grupo tambien en flujo de `submitQuiz` cuando el quiz sea `GROUP`.
 
 ### Completado
 - Crear DTOs de response para mantener contrato estable y desacoplar salida de entidades:
