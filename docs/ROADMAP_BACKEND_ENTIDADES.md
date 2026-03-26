@@ -56,6 +56,7 @@
 - Agregar migraciones incrementales para evolucion de esquemas sin depender de `ddl-auto`.
 - Documentar contrato de API actualizado para frontend Flutter.
 - Agregar tests unitarios de controllers con MockMvc para visibilidad (private/group/public).
+- Alinear documento de endpoints dentro del frontend (`ENDPOINTS_BACKEND.md`) con cualquier cambio futuro de rutas.
 
 ## Migrations aplicadas en Supabase
 - `core_schema_structures_v1`
