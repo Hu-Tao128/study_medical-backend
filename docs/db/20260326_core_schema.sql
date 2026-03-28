@@ -59,10 +59,12 @@ create table if not exists public.institutions (
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  type text not null default 'STUDY',
   description text,
   institution_id uuid,
   created_by uuid,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint chk_groups_type check (type in ('STUDY', 'CLASS'))
 );
 
 create table if not exists public.memberships (
@@ -70,8 +72,10 @@ create table if not exists public.memberships (
   user_id uuid not null,
   group_id uuid not null,
   role text not null default 'STUDENT',
+  status text not null default 'ACTIVE',
   joined_at timestamptz not null default now(),
   constraint chk_memberships_role check (role in ('STUDENT', 'TEACHER')),
+  constraint chk_memberships_status check (status in ('ACTIVE', 'PENDING', 'BANNED')),
   constraint uk_memberships_user_group unique (user_id, group_id)
 );
 
@@ -88,15 +92,30 @@ create table if not exists public.user_progress (
   topic_id uuid not null,
   accuracy double precision,
   attempts integer not null default 0,
+  streak_days integer not null default 0,
+  time_spent_minutes integer not null default 0,
   last_score double precision,
   last_studied_at timestamptz,
   constraint uk_user_progress_user_topic unique (user_id, topic_id)
+);
+
+create table if not exists public.study_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  topic_id uuid not null,
+  mode text not null,
+  total_questions integer,
+  correct_answers integer,
+  started_at timestamptz not null default now(),
+  ended_at timestamptz,
+  constraint chk_study_sessions_mode check (mode in ('flashcards', 'quiz'))
 );
 
 create table if not exists public.embeddings (
   id uuid primary key default gen_random_uuid(),
   content_type text not null,
   content_id uuid not null,
+  topic_id uuid,
   embedding extensions.vector(1536) not null,
   created_at timestamptz not null default now()
 );
@@ -124,7 +143,39 @@ alter table public.users
 
 alter table public.users
   add column if not exists career text,
-  add column if not exists last_active_at timestamptz;
+  add column if not exists last_active_at timestamptz,
+  add column if not exists is_active boolean default true;
+
+alter table public.users
+  alter column is_active set default true,
+  alter column is_active set not null;
+
+alter table public.groups
+  add column if not exists type text default 'STUDY';
+
+alter table public.groups
+  alter column type set default 'STUDY',
+  alter column type set not null;
+
+alter table public.memberships
+  add column if not exists status text default 'ACTIVE';
+
+alter table public.memberships
+  alter column status set default 'ACTIVE',
+  alter column status set not null;
+
+alter table public.user_progress
+  add column if not exists streak_days integer default 0,
+  add column if not exists time_spent_minutes integer default 0;
+
+alter table public.user_progress
+  alter column streak_days set default 0,
+  alter column streak_days set not null,
+  alter column time_spent_minutes set default 0,
+  alter column time_spent_minutes set not null;
+
+alter table public.embeddings
+  add column if not exists topic_id uuid;
 
 do $$
 begin
@@ -154,6 +205,13 @@ $$;
 do $$
 begin
   if not exists (
+    select 1 from pg_constraint where conname = 'chk_groups_type'
+  ) then
+    alter table public.groups
+      add constraint chk_groups_type check (type in ('STUDY', 'CLASS'));
+  end if;
+
+  if not exists (
     select 1 from pg_constraint where conname = 'fk_groups_institution'
   ) then
     alter table public.groups
@@ -177,6 +235,13 @@ $$;
 
 do $$
 begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_memberships_status'
+  ) then
+    alter table public.memberships
+      add constraint chk_memberships_status check (status in ('ACTIVE', 'PENDING', 'BANNED'));
+  end if;
+
   if not exists (
     select 1 from pg_constraint where conname = 'fk_memberships_user'
   ) then
@@ -216,6 +281,40 @@ $$;
 do $$
 begin
   if not exists (
+    select 1 from pg_constraint where conname = 'fk_study_sessions_user'
+  ) then
+    alter table public.study_sessions
+      add constraint fk_study_sessions_user
+      foreign key (user_id)
+      references public.users(id)
+      on delete cascade;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'fk_study_sessions_topic'
+  ) then
+    alter table public.study_sessions
+      add constraint fk_study_sessions_topic
+      foreign key (topic_id)
+      references public.topics(id)
+      on delete cascade;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'fk_embeddings_topic'
+  ) then
+    alter table public.embeddings
+      add constraint fk_embeddings_topic
+      foreign key (topic_id)
+      references public.topics(id)
+      on delete set null;
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
     select 1 from pg_constraint where conname = 'fk_user_progress_user'
   ) then
     alter table public.user_progress
@@ -241,10 +340,15 @@ create index if not exists idx_memberships_user_id on public.memberships(user_id
 create index if not exists idx_memberships_group_id on public.memberships(group_id);
 create index if not exists idx_progress_user on public.user_progress(user_id);
 create index if not exists idx_progress_topic on public.user_progress(topic_id);
+create index if not exists idx_study_sessions_user on public.study_sessions(user_id);
+create index if not exists idx_study_sessions_topic on public.study_sessions(topic_id);
+create index if not exists idx_study_sessions_mode on public.study_sessions(mode);
 create index if not exists idx_groups_institution on public.groups(institution_id);
 create index if not exists idx_groups_created_by on public.groups(created_by);
+create index if not exists idx_groups_type on public.groups(type);
 create index if not exists idx_topics_parent on public.topics(parent_id);
 create index if not exists idx_embeddings_content on public.embeddings(content_type, content_id);
+create index if not exists idx_embeddings_topic on public.embeddings(topic_id);
 
 drop trigger if exists trg_users_set_updated_at on public.users;
 create trigger trg_users_set_updated_at
@@ -257,6 +361,7 @@ alter table public.groups enable row level security;
 alter table public.memberships enable row level security;
 alter table public.topics enable row level security;
 alter table public.user_progress enable row level security;
+alter table public.study_sessions enable row level security;
 alter table public.embeddings enable row level security;
 
 create policy "users_select_own_profile"
@@ -390,6 +495,12 @@ using (
 
 create policy "user_progress_owner_all"
 on public.user_progress
+for all
+using (user_id = public.current_user_id())
+with check (user_id = public.current_user_id());
+
+create policy "study_sessions_owner_all"
+on public.study_sessions
 for all
 using (user_id = public.current_user_id())
 with check (user_id = public.current_user_id());
