@@ -3,6 +3,7 @@ package com.studymedical.backend.application.usecases.user;
 import com.studymedical.backend.application.usecases.auth.AuthUserPayload;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.UserRepository;
+import com.studymedical.backend.infrastructure.security.SupabaseRlsContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,14 +15,20 @@ import java.util.UUID;
 public class CreateUserUseCase {
 
     private final UserRepository userRepository;
+    private final SupabaseRlsContextService supabaseRlsContextService;
 
-    public CreateUserUseCase(UserRepository userRepository) {
+    public CreateUserUseCase(
+            UserRepository userRepository,
+            SupabaseRlsContextService supabaseRlsContextService
+    ) {
         this.userRepository = userRepository;
+        this.supabaseRlsContextService = supabaseRlsContextService;
     }
 
     @Transactional
     public User execute(AuthUserPayload payload) {
         UUID authId = normalizeAuthId(payload.subject());
+        supabaseRlsContextService.applyAuthenticatedUser(authId);
 
         User user = userRepository.findByAuthId(authId)
                 .orElseGet(() -> User.builder()

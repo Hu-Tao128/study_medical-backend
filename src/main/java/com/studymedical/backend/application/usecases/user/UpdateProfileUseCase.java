@@ -2,6 +2,7 @@ package com.studymedical.backend.application.usecases.user;
 
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.UserRepository;
+import com.studymedical.backend.infrastructure.security.SupabaseRlsContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +14,19 @@ import java.util.UUID;
 public class UpdateProfileUseCase {
 
     private final UserRepository userRepository;
+    private final SupabaseRlsContextService supabaseRlsContextService;
 
-    public UpdateProfileUseCase(UserRepository userRepository) {
+    public UpdateProfileUseCase(
+            UserRepository userRepository,
+            SupabaseRlsContextService supabaseRlsContextService
+    ) {
         this.userRepository = userRepository;
+        this.supabaseRlsContextService = supabaseRlsContextService;
     }
 
     @Transactional
     public Optional<User> execute(UUID authId, UpdateProfileCommand command) {
+        supabaseRlsContextService.applyAuthenticatedUser(authId);
         return userRepository.findByAuthId(authId)
                 .map(user -> {
                     if (command.displayName() != null) {
