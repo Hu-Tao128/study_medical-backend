@@ -123,6 +123,87 @@ public class QuizController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<QuizResponseDto> getById(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        Quiz quiz = quizMongoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
+
+        boolean canAccessQuiz = roleAuthorizationService.canReadByVisibility(
+                currentUser,
+                quiz.getCreatedBy(),
+                toSecurityVisibility(quiz.getVisibility()),
+                quiz.getGroupId()
+        );
+
+        if (!canAccessQuiz) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Sin acceso a este quiz");
+        }
+
+        return ResponseEntity.ok(QuizResponseDto.fromEntity(quiz));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<QuizResponseDto> updateQuiz(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id,
+            @Valid @RequestBody GenerateQuizRequest request
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
+
+        Quiz existing = quizMongoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
+
+        roleAuthorizationService.requireSelfOrRole(currentUser, existing.getCreatedBy(), User.Role.ADMIN);
+
+        List<Quiz.QuizQuestion> questions = request.questions() == null
+                ? List.of()
+                : request.questions().stream()
+                .map(q -> Quiz.QuizQuestion.builder()
+                        .question(q.question())
+                        .options(q.options())
+                        .correctAnswer(q.correctAnswer())
+                        .explanation(q.explanation())
+                        .aiGenerated(q.aiGenerated() != null && q.aiGenerated())
+                        .build())
+                .toList();
+
+        existing.setTitle(request.title());
+        existing.setTopicId(request.topicId());
+        existing.setQuestions(questions);
+        existing.setVisibility(request.visibility());
+        existing.setGroupId(request.groupId());
+        existing.setAiGenerated(request.aiGenerated() != null && request.aiGenerated());
+        existing.setAiModel(request.aiModel());
+        existing.setAiSource(request.aiSource());
+        existing.setAiEmbeddingsId(request.aiEmbeddingsId());
+        existing.initializeDefaults();
+
+        Quiz updated = quizMongoRepository.save(existing);
+        return ResponseEntity.ok(QuizResponseDto.fromEntity(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuiz(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        Quiz existing = quizMongoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
+
+        roleAuthorizationService.requireSelfOrRole(currentUser, existing.getCreatedBy(), User.Role.ADMIN);
+        quizMongoRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     public record SubmitQuizRequest(@NotNull UUID userId, List<Integer> answers) {
     }
 

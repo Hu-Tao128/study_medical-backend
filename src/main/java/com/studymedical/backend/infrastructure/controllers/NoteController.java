@@ -44,10 +44,44 @@ public class NoteController {
                 .aiGenerated(request.aiGenerated() != null && request.aiGenerated())
                 .aiModel(request.aiModel())
                 .aiSource(request.aiSource())
+                .tags(request.tags())
+                .isFavorite(request.isFavorite() != null && request.isFavorite())
+                .isArchived(request.isArchived() != null && request.isArchived())
                 .build();
         note.initializeOnCreate();
         Note created = noteMongoRepository.save(note);
         return ResponseEntity.ok(NoteResponseDto.fromEntity(created));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getById(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+
+        return noteMongoRepository.findById(id)
+                .map(note -> {
+                    roleAuthorizationService.requireSelfOrRole(currentUser, note.getUserId(), User.Role.ADMIN);
+                    return ResponseEntity.ok(NoteResponseDto.fromEntity(note));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping
+    public ResponseEntity<List<NoteResponseDto>> listNotes(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "topicId", required = false) UUID topicId
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+
+        List<Note> notes = topicId == null
+                ? noteMongoRepository.findByUserId(currentUser.getId())
+                : noteMongoRepository.findByUserIdAndTopicId(currentUser.getId(), topicId);
+
+        return ResponseEntity.ok(notes.stream().map(NoteResponseDto::fromEntity).toList());
     }
 
     @PutMapping("/{id}")
@@ -67,9 +101,73 @@ public class NoteController {
                     existing.setTopicId(request.topicId());
                     existing.setAiSummary(request.aiSummary());
                     existing.setAiEmbeddingsId(request.aiEmbeddingsId());
+                    existing.setAiGenerated(request.aiGenerated() != null && request.aiGenerated());
+                    existing.setAiModel(request.aiModel());
+                    existing.setAiSource(request.aiSource());
+                    existing.setTags(request.tags());
+                    if (request.isFavorite() != null) {
+                        existing.setFavorite(request.isFavorite());
+                    }
+                    if (request.isArchived() != null) {
+                        existing.setArchived(request.isArchived());
+                    }
                     existing.initializeOnUpdate();
                     Note updated = noteMongoRepository.save(existing);
                     return ResponseEntity.ok(NoteResponseDto.fromEntity(updated));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> patchNote(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id,
+            @Valid @RequestBody PatchNoteRequest request
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+
+        return noteMongoRepository.findById(id)
+                .map(existing -> {
+                    roleAuthorizationService.requireSelfOrRole(currentUser, existing.getUserId(), User.Role.ADMIN);
+                    if (request.title() != null) {
+                        existing.setTitle(request.title());
+                    }
+                    if (request.contentMd() != null) {
+                        existing.setContentMd(request.contentMd());
+                    }
+                    if (request.topicId() != null) {
+                        existing.setTopicId(request.topicId());
+                    }
+                    if (request.tags() != null) {
+                        existing.setTags(request.tags());
+                    }
+                    if (request.isFavorite() != null) {
+                        existing.setFavorite(request.isFavorite());
+                    }
+                    if (request.isArchived() != null) {
+                        existing.setArchived(request.isArchived());
+                    }
+                    existing.initializeOnUpdate();
+                    Note updated = noteMongoRepository.save(existing);
+                    return ResponseEntity.ok(NoteResponseDto.fromEntity(updated));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteNote(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+
+        return noteMongoRepository.findById(id)
+                .map(existing -> {
+                    roleAuthorizationService.requireSelfOrRole(currentUser, existing.getUserId(), User.Role.ADMIN);
+                    noteMongoRepository.deleteById(id);
+                    return ResponseEntity.noContent().build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -97,7 +195,20 @@ public class NoteController {
             String aiEmbeddingsId,
             Boolean aiGenerated,
             String aiModel,
-            String aiSource
+            String aiSource,
+            List<String> tags,
+            Boolean isFavorite,
+            Boolean isArchived
+    ) {
+    }
+
+    public record PatchNoteRequest(
+            String title,
+            String contentMd,
+            UUID topicId,
+            List<String> tags,
+            Boolean isFavorite,
+            Boolean isArchived
     ) {
     }
 }

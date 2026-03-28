@@ -13,4 +13,6 @@ public interface NoteMongoRepository extends MongoRepository<Note, String> {
     List<Note> findByUserId(UUID userId);
 
     List<Note> findByTopicId(UUID topicId);
+
+    List<Note> findByUserIdAndTopicId(UUID userId, UUID topicId);
 }

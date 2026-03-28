@@ -3,6 +3,7 @@ package com.studymedical.backend.infrastructure.dto.response;
 import com.studymedical.backend.domain.entities.Note;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record NoteResponseDto(
@@ -16,6 +17,9 @@ public record NoteResponseDto(
         boolean aiGenerated,
         String aiModel,
         String aiSource,
+        List<String> tags,
+        boolean isFavorite,
+        boolean isArchived,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -31,6 +35,9 @@ public record NoteResponseDto(
                 note.isAiGenerated(),
                 note.getAiModel(),
                 note.getAiSource(),
+                note.getTags(),
+                note.isFavorite(),
+                note.isArchived(),
                 note.getCreatedAt(),
                 note.getUpdatedAt()
         );
