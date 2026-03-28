@@ -86,10 +86,6 @@ public class DevAuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Authorization header requerido"));
         }
 
-        if (!devMode && jwt == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "JWT no validado por el resource server"));
-        }
-
         try {
             AuthUserPayload payload = tokenPayloadExtractor.extract(jwt, authHeader);
             User user = createUserUseCase.execute(payload);

@@ -34,7 +34,7 @@ public class SecurityConfig {
             );
         } else {
             http.authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/actuator/**").permitAll()
+                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/api/v1/auth/sync-session", "/actuator/**").permitAll()
                     .anyRequest().authenticated()
             );
         }
