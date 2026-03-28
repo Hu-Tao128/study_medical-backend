@@ -8,6 +8,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -22,10 +24,20 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        BearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(request -> {
+                            String path = request.getServletPath();
+                            if ("/api/v1/auth/sync-session".equals(path) || path.startsWith("/api/v1/profile/")) {
+                                return null;
+                            }
+                            return defaultResolver.resolve(request);
+                        })
+                        .jwt(Customizer.withDefaults()));
 
         if (devMode) {
             http.authorizeHttpRequests(auth -> auth
@@ -34,7 +46,7 @@ public class SecurityConfig {
             );
         } else {
             http.authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/api/v1/auth/sync-session", "/actuator/**").permitAll()
+                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/api/v1/auth/sync-session", "/api/v1/profile/**", "/actuator/**").permitAll()
                     .anyRequest().authenticated()
             );
         }
