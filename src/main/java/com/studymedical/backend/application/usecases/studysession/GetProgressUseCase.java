@@ -9,6 +9,7 @@ import com.studymedical.backend.domain.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -44,6 +45,27 @@ public class GetProgressUseCase {
         );
     }
 
+    public RadarResult executeRadar(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        List<RadarTopic> topics = userProgressRepository.findByUser_Id(user.getId()).stream()
+                .map(progress -> new RadarTopic(
+                        progress.getTopic() != null ? progress.getTopic().getId() : null,
+                        progress.getTopic() != null ? progress.getTopic().getName() : "",
+                        progress.getAccuracy() == null ? 0.0 : progress.getAccuracy()
+                ))
+                .toList();
+
+        return new RadarResult(topics);
+    }
+
     public record ProgressResult(double accuracy, int attempts, LocalDateTime lastStudiedAt) {
+    }
+
+    public record RadarResult(List<RadarTopic> topics) {
+    }
+
+    public record RadarTopic(UUID topicId, String name, double accuracy) {
     }
 }

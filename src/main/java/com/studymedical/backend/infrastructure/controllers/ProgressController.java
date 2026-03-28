@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,6 +37,25 @@ public class ProgressController {
         return ResponseEntity.ok(new ProgressResponse(result.accuracy(), result.attempts(), result.lastStudiedAt()));
     }
 
+    @GetMapping("/radar")
+    public ResponseEntity<RadarResponse> radar(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        GetProgressUseCase.RadarResult result = getProgressUseCase.executeRadar(currentUser.getId());
+        List<RadarTopicResponse> topics = result.topics().stream()
+                .map(topic -> new RadarTopicResponse(topic.topicId(), topic.name(), topic.accuracy()))
+                .toList();
+        return ResponseEntity.ok(new RadarResponse(topics));
+    }
+
     public record ProgressResponse(double accuracy, int attempts, LocalDateTime lastStudiedAt) {
+    }
+
+    public record RadarResponse(List<RadarTopicResponse> topics) {
+    }
+
+    public record RadarTopicResponse(UUID topicId, String name, double accuracy) {
     }
 }

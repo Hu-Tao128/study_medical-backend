@@ -19,7 +19,8 @@
 - [ ] Integrar flujo en frontend Study (consumo start/submit/progress)
 - [ ] Confirmar en QA con datos reales de Mongo + Postgres
 - [x] Fase 2 backend: CRUD complementario notes/flashcards/quizzes/clinical-cases
+- [x] Endpoint de radar por topicos (`GET /api/v1/progress/radar`)
 
 ## Falta (despues de Prioridad 1)
 - [ ] Completar CRUD faltante de notes/flashcards/quizzes
-- [ ] Ajustar radar endpoint agregado por topicos
+- [x] Ajustar radar endpoint agregado por topicos
