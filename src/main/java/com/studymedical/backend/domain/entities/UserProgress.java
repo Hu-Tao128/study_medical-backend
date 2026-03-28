@@ -40,6 +40,12 @@ public class UserProgress {
 
     private Integer attempts;
 
+    @Column(name = "streak_days")
+    private Integer streakDays;
+
+    @Column(name = "time_spent_minutes")
+    private Integer timeSpentMinutes;
+
     @Column(name = "last_score")
     private Double lastScore;
 
@@ -56,6 +62,12 @@ public class UserProgress {
         }
         if (lastScore == null) {
             lastScore = 0.0;
+        }
+        if (streakDays == null) {
+            streakDays = 0;
+        }
+        if (timeSpentMinutes == null) {
+            timeSpentMinutes = 0;
         }
     }
 }

@@ -106,6 +106,7 @@ create table if not exists public.study_sessions (
   mode text not null,
   total_questions integer,
   correct_answers integer,
+  accuracy double precision,
   started_at timestamptz not null default now(),
   ended_at timestamptz,
   constraint chk_study_sessions_mode check (mode in ('flashcards', 'quiz'))
@@ -176,6 +177,9 @@ alter table public.user_progress
 
 alter table public.embeddings
   add column if not exists topic_id uuid;
+
+alter table public.study_sessions
+  add column if not exists accuracy double precision;
 
 do $$
 begin

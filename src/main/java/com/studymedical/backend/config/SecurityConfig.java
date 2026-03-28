@@ -32,7 +32,10 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(request -> {
                             String path = request.getServletPath();
-                            if ("/api/v1/auth/sync-session".equals(path) || path.startsWith("/api/v1/profile/")) {
+                            if ("/api/v1/auth/sync-session".equals(path)
+                                    || path.startsWith("/api/v1/profile/")
+                                    || path.startsWith("/api/v1/study-sessions")
+                                    || path.startsWith("/api/v1/progress")) {
                                 return null;
                             }
                             return defaultResolver.resolve(request);
@@ -46,7 +49,16 @@ public class SecurityConfig {
             );
         } else {
             http.authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/api/v1/auth/sync-session", "/api/v1/profile/**", "/actuator/**").permitAll()
+                    .requestMatchers(
+                            "/",
+                            "/favicon.ico",
+                            "/api/v1/health",
+                            "/api/v1/auth/sync-session",
+                            "/api/v1/profile/**",
+                            "/api/v1/study-sessions/**",
+                            "/api/v1/progress/**",
+                            "/actuator/**"
+                    ).permitAll()
                     .anyRequest().authenticated()
             );
         }
