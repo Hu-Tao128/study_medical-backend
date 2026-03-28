@@ -1,7 +1,7 @@
 # Roadmap temporal - Study loop (se borra al cerrar)
 
 ## Estado actual
-- Paso actual: 4 (Fase 2 completada, iniciando integracion)
+- Paso actual: 5 (roadmap backend completado, listo para integrar frontend)
 - Objetivo: cerrar loop `start -> submit -> progress`
 
 ## Hecho
@@ -16,11 +16,13 @@
 - [x] Migrar `study_sessions` para incluir `accuracy`
 
 ## En progreso
-- [ ] Integrar flujo en frontend Study (consumo start/submit/progress)
+- [ ] Integrar flujo en frontend Study (consumo start/submit/progress/radar)
 - [ ] Confirmar en QA con datos reales de Mongo + Postgres
-- [x] Fase 2 backend: CRUD complementario notes/flashcards/quizzes/clinical-cases
-- [x] Endpoint de radar por topicos (`GET /api/v1/progress/radar`)
 
-## Falta (despues de Prioridad 1)
-- [ ] Completar CRUD faltante de notes/flashcards/quizzes
-- [x] Ajustar radar endpoint agregado por topicos
+## Cierre backend
+- [x] Prioridad 1 completa (study sessions + progress)
+- [x] Fase 2 completa (CRUD complementario de contenido)
+- [x] API backend actualizada para handoff a frontend
+
+## Nota
+- Este roadmap temporal se puede eliminar cuando termine la integracion frontend + QA final.
