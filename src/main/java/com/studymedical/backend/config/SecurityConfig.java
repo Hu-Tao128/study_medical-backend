@@ -29,12 +29,12 @@ public class SecurityConfig {
 
         if (devMode) {
             http.authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/health", "/api/v1/auth/**", "/api/v1/profile/**", "/actuator/**").permitAll()
+                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/api/v1/auth/**", "/api/v1/profile/**", "/actuator/**").permitAll()
                     .anyRequest().authenticated()
             );
         } else {
             http.authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/v1/health", "/actuator/**").permitAll()
+                    .requestMatchers("/", "/favicon.ico", "/api/v1/health", "/actuator/**").permitAll()
                     .anyRequest().authenticated()
             );
         }
