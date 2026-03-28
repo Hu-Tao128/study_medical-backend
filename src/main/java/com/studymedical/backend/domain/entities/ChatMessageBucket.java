@@ -2,6 +2,7 @@ package com.studymedical.backend.domain.entities;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Document(collection = "chat_messages")
+@Document(collection = "chat_buckets")
+@CompoundIndex(name = "idx_chat_room_bucket", def = "{'roomId': 1, 'bucketIndex': -1}")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,6 +27,8 @@ public class ChatMessageBucket {
 
     @Indexed
     private UUID roomId;
+
+    private int bucketIndex;
 
     private int count;
 

@@ -4,7 +4,6 @@ import com.studymedical.backend.domain.entities.ChatMessageBucket;
 import com.studymedical.backend.domain.repositories.mongo.ChatMessageBucketMongoRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -21,11 +20,16 @@ public class SendMessageUseCase {
         message.initializeDefaults();
 
         ChatMessageBucket bucket = chatMessageBucketMongoRepository
-                .findTopByRoomIdOrderByCreatedAtDesc(roomId)
+                .findTopByRoomIdOrderByBucketIndexDesc(roomId)
                 .filter(existing -> existing.getCount() < ChatMessageBucket.MAX_BUCKET_SIZE)
                 .orElseGet(() -> ChatMessageBucket.builder()
-                        .id(roomId + "-" + Instant.now().toEpochMilli())
                         .roomId(roomId)
+                        .bucketIndex(
+                                chatMessageBucketMongoRepository
+                                        .findTopByRoomIdOrderByBucketIndexDesc(roomId)
+                                        .map(last -> last.getBucketIndex() + 1)
+                                        .orElse(0)
+                        )
                         .messages(new ArrayList<>())
                         .count(0)
                         .build());

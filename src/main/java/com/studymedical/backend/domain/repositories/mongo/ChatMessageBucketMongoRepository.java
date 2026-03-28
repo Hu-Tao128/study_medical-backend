@@ -11,7 +11,7 @@ import java.util.UUID;
 @Repository
 public interface ChatMessageBucketMongoRepository extends MongoRepository<ChatMessageBucket, String> {
 
-    Optional<ChatMessageBucket> findTopByRoomIdOrderByCreatedAtDesc(UUID roomId);
+    Optional<ChatMessageBucket> findTopByRoomIdOrderByBucketIndexDesc(UUID roomId);
 
-    List<ChatMessageBucket> findByRoomIdOrderByCreatedAtAsc(UUID roomId);
+    List<ChatMessageBucket> findByRoomIdOrderByBucketIndexAsc(UUID roomId);
 }

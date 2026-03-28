@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,9 +39,9 @@ class SendMessageUseCaseTest {
         ChatMessageBucket existing = ChatMessageBucket.builder()
                 .id("bucket-1")
                 .roomId(roomId)
+                .bucketIndex(0)
                 .messages(new ArrayList<>())
                 .count(10)
-                .createdAt(Instant.now())
                 .build();
 
         ChatMessageBucket.Message message = ChatMessageBucket.Message.builder()
@@ -50,7 +49,7 @@ class SendMessageUseCaseTest {
                 .text("hola")
                 .build();
 
-        when(chatMessageBucketMongoRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId)).thenReturn(Optional.of(existing));
+        when(chatMessageBucketMongoRepository.findTopByRoomIdOrderByBucketIndexDesc(roomId)).thenReturn(Optional.of(existing));
         when(chatMessageBucketMongoRepository.save(any(ChatMessageBucket.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ChatMessageBucket saved = sendMessageUseCase.execute(roomId, message);
@@ -69,9 +68,9 @@ class SendMessageUseCaseTest {
         ChatMessageBucket full = ChatMessageBucket.builder()
                 .id("bucket-full")
                 .roomId(roomId)
+                .bucketIndex(3)
                 .messages(new ArrayList<>(List.of(new ChatMessageBucket.Message())))
                 .count(ChatMessageBucket.MAX_BUCKET_SIZE)
-                .createdAt(Instant.now())
                 .build();
 
         ChatMessageBucket.Message message = ChatMessageBucket.Message.builder()
@@ -79,13 +78,13 @@ class SendMessageUseCaseTest {
                 .text("mensaje")
                 .build();
 
-        when(chatMessageBucketMongoRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId)).thenReturn(Optional.of(full));
+        when(chatMessageBucketMongoRepository.findTopByRoomIdOrderByBucketIndexDesc(roomId)).thenReturn(Optional.of(full));
         when(chatMessageBucketMongoRepository.save(any(ChatMessageBucket.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ChatMessageBucket saved = sendMessageUseCase.execute(roomId, message);
 
-        assertNotNull(saved.getId());
         assertEquals(roomId, saved.getRoomId());
+        assertEquals(4, saved.getBucketIndex());
         assertEquals(1, saved.getMessages().size());
         assertEquals(1, saved.getCount());
     }

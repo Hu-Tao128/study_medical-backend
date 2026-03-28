@@ -18,7 +18,7 @@ public class GetChatHistoryUseCase {
     }
 
     public List<ChatMessageBucket.Message> execute(UUID roomId) {
-        List<ChatMessageBucket> buckets = chatMessageBucketMongoRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+        List<ChatMessageBucket> buckets = chatMessageBucketMongoRepository.findByRoomIdOrderByBucketIndexAsc(roomId);
         List<ChatMessageBucket.Message> messages = new ArrayList<>();
 
         for (ChatMessageBucket bucket : buckets) {

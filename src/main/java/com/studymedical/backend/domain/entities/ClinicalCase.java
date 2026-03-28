@@ -33,6 +33,9 @@ public class ClinicalCase {
     @Builder.Default
     private List<CaseQuestion> questions = new ArrayList<>();
 
+    @Builder.Default
+    private List<CaseAsset> assets = new ArrayList<>();
+
     @Indexed
     private UUID topicId;
 
@@ -87,6 +90,16 @@ public class ClinicalCase {
         private Integer correctAnswer;
 
         private String explanation;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CaseAsset {
+        private String type;
+        private String url;
     }
 
     public enum Visibility {
