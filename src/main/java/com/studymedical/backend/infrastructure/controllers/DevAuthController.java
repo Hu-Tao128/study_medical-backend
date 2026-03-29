@@ -63,18 +63,20 @@ public class DevAuthController {
 
         String token = generateToken(user.getAuthId().toString(), user.getEmail(), user.getDisplayName());
 
-        return ResponseEntity.ok(Map.of(
-                "accessToken", token,
-                "tokenType", "Bearer",
-                "expiresIn", jwtExpiration / 1000,
-                "user", Map.of(
-                        "id", user.getId(),
-                        "authId", user.getAuthId(),
-                        "email", user.getEmail(),
-                        "displayName", user.getDisplayName(),
-                        "role", user.getRole().name()
-                )
-        ));
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("accessToken", token);
+        response.put("tokenType", "Bearer");
+        response.put("expiresIn", jwtExpiration / 1000);
+        
+        Map<String, Object> userMap = new java.util.HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("authId", user.getAuthId());
+        userMap.put("email", user.getEmail());
+        userMap.put("displayName", user.getDisplayName());
+        userMap.put("role", user.getRole().name());
+        response.put("user", userMap);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/sync-session")
@@ -83,29 +85,32 @@ public class DevAuthController {
             @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(Map.of("error", "Authorization header requerido"));
+            return ResponseEntity.status(401).body(java.util.Map.of("error", "Authorization header requerido"));
         }
 
         try {
             AuthUserPayload payload = tokenPayloadExtractor.extract(jwt, authHeader);
             User user = createUserUseCase.execute(payload);
-            return ResponseEntity.ok(Map.of(
-                    "id", user.getId(),
-                    "authId", user.getAuthId(),
-                    "email", user.getEmail(),
-                    "displayName", user.getDisplayName(),
-                    "role", user.getRole().name(),
-                    "lastLoginAt", user.getLastLoginAt()
-            ));
+            
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("id", user.getId());
+            response.put("authId", user.getAuthId());
+            response.put("email", user.getEmail());
+            response.put("displayName", user.getDisplayName());
+            response.put("role", user.getRole().name());
+            response.put("photoUrl", user.getPhotoUrl());
+            response.put("lastLoginAt", user.getLastLoginAt() != null ? user.getLastLoginAt().toString() : null);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error syncing session with backend", e);
             if (devMode) {
-                return ResponseEntity.status(401).body(Map.of(
-                        "error", "Token invalido",
-                        "detail", e.getMessage()
-                ));
+                Map<String, Object> errorResponse = new java.util.HashMap<>();
+                errorResponse.put("error", "Token invalido");
+                errorResponse.put("detail", e.getMessage());
+                return ResponseEntity.status(401).body(errorResponse);
             }
-            return ResponseEntity.status(401).body(Map.of("error", "Token invalido"));
+            return ResponseEntity.status(401).body(java.util.Map.of("error", "Token invalido"));
         }
     }
 
