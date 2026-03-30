@@ -53,18 +53,18 @@ Adaptadores para sistemas externos:
 
 ## 🔐 Autenticación y Seguridad
 
-El sistema utiliza **Supabase Auth** para la gestión de identidades. El backend valida los JWT recibidos en cada request y mapea el usuario al modelo interno.
+El sistema utiliza **Firebase Auth** para la gestión de identidades en el frontend. El backend valida los JWT (ID Tokens) recibidos de Firebase en cada request y sincroniza la información del usuario con la base de datos interna en Supabase.
 
 Flujo de autenticación:
-1. Cliente autenticado con Supabase → JWT recibido
-2. Backend valida firma y expiración del token
-3. Usuario mapeado a modelo interno con roles
-4. Acceso controlado mediante verificación de permisos
+1. Cliente autenticado con Firebase (Email/Pass o Google) → JWT recibido
+2. Backend valida firma y expiración del token contra los emisores de Google/Firebase.
+3. Usuario mapeado/creado en la base de datos PostgreSQL alojada en **Supabase**.
+4. Acceso controlado mediante verificación de roles (`STUDENT`, `TEACHER`, `ADMIN`).
 
 El backend es responsable de:
-- Validar tokens JWT
-- Mapear usuario externo a modelo interno
-- Controlar acceso por roles (student, teacher, admin)
+- Validar tokens JWT de Firebase.
+- Sincronizar perfiles de usuario en PostgreSQL.
+- Aplicar contextos de RLS (Row Level Security) para consultas a Supabase.
 
 ---
 

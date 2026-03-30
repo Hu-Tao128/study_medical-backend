@@ -21,7 +21,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SUPABASE_ISSUER_URI:https://spxgotrytjkofqinsklw.supabase.co/auth/v1}
+          issuer-uri: https://securetoken.google.com/studymedical
 
 app:
   dev-mode: true
