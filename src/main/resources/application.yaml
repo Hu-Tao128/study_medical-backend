@@ -36,6 +36,7 @@ spring:
         jwt:
           issuer-uri: ${FIREBASE_ISSUER_URI:https://securetoken.google.com/studymedical}
           jwk-set-uri: ${FIREBASE_JWK_SET_URI:https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com}
+          audiences: ${FIREBASE_AUDIENCE:studymedical}
 
 server:
   port: ${PORT:8081}
