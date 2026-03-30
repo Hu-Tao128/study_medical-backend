@@ -15,7 +15,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/studymedical}
-      auto-index-creation: true
+      auto-index-creation: false
 
   security:
     oauth2:
