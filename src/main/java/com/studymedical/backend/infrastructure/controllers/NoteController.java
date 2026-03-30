@@ -1,5 +1,6 @@
 package com.studymedical.backend.infrastructure.controllers;
 
+import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
 import com.studymedical.backend.domain.entities.Note;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.NoteMongoRepository;
@@ -7,7 +8,6 @@ import com.studymedical.backend.infrastructure.dto.response.NoteResponseDto;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +24,7 @@ public class NoteController {
 
     private final NoteMongoRepository noteMongoRepository;
     private final RoleAuthorizationService roleAuthorizationService;
+    private final CreateUserUseCase createUserUseCase;
 
     @PostMapping
     public ResponseEntity<NoteResponseDto> createNote(
@@ -32,13 +33,16 @@ public class NoteController {
             @Valid @RequestBody UpsertNoteRequest request
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        roleAuthorizationService.requireSelfOrRole(currentUser, request.userId(), User.Role.ADMIN);
+        UUID targetUserId = createUserUseCase.normalizeAuthId(request.userId());
+        UUID targetTopicId = request.topicId() != null ? createUserUseCase.normalizeAuthId(request.topicId()) : null;
+
+        roleAuthorizationService.requireSelfOrRole(currentUser, targetUserId, User.Role.ADMIN);
 
         Note note = Note.builder()
-                .userId(request.userId())
+                .userId(targetUserId)
                 .title(request.title())
                 .contentMd(request.contentMd())
-                .topicId(request.topicId())
+                .topicId(targetTopicId)
                 .aiSummary(request.aiSummary())
                 .aiEmbeddingsId(request.aiEmbeddingsId())
                 .aiGenerated(request.aiGenerated() != null && request.aiGenerated())
@@ -73,13 +77,14 @@ public class NoteController {
     public ResponseEntity<List<NoteResponseDto>> listNotes(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @RequestParam(value = "topicId", required = false) UUID topicId
+            @RequestParam(value = "topicId", required = false) String topicId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        UUID targetTopicId = topicId != null ? createUserUseCase.normalizeAuthId(topicId) : null;
 
-        List<Note> notes = topicId == null
+        List<Note> notes = targetTopicId == null
                 ? noteMongoRepository.findByUserId(currentUser.getId())
-                : noteMongoRepository.findByUserIdAndTopicId(currentUser.getId(), topicId);
+                : noteMongoRepository.findByUserIdAndTopicId(currentUser.getId(), targetTopicId);
 
         return ResponseEntity.ok(notes.stream().map(NoteResponseDto::fromEntity).toList());
     }
@@ -92,13 +97,16 @@ public class NoteController {
             @Valid @RequestBody UpsertNoteRequest request
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        roleAuthorizationService.requireSelfOrRole(currentUser, request.userId(), User.Role.ADMIN);
+        UUID targetUserId = createUserUseCase.normalizeAuthId(request.userId());
+        UUID targetTopicId = request.topicId() != null ? createUserUseCase.normalizeAuthId(request.topicId()) : null;
+
+        roleAuthorizationService.requireSelfOrRole(currentUser, targetUserId, User.Role.ADMIN);
 
         return noteMongoRepository.findById(id)
                 .map(existing -> {
                     existing.setTitle(request.title());
                     existing.setContentMd(request.contentMd());
-                    existing.setTopicId(request.topicId());
+                    existing.setTopicId(targetTopicId);
                     existing.setAiSummary(request.aiSummary());
                     existing.setAiEmbeddingsId(request.aiEmbeddingsId());
                     existing.setAiGenerated(request.aiGenerated() != null && request.aiGenerated());
@@ -137,7 +145,7 @@ public class NoteController {
                         existing.setContentMd(request.contentMd());
                     }
                     if (request.topicId() != null) {
-                        existing.setTopicId(request.topicId());
+                        existing.setTopicId(createUserUseCase.normalizeAuthId(request.topicId()));
                     }
                     if (request.tags() != null) {
                         existing.setTags(request.tags());
@@ -176,21 +184,22 @@ public class NoteController {
     public ResponseEntity<List<NoteResponseDto>> getByUser(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @PathVariable UUID userId
+            @PathVariable String userId
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
-        roleAuthorizationService.requireSelfOrRole(currentUser, userId, User.Role.ADMIN);
-        List<NoteResponseDto> notes = noteMongoRepository.findByUserId(userId).stream()
+        UUID targetUserId = createUserUseCase.normalizeAuthId(userId);
+        roleAuthorizationService.requireSelfOrRole(currentUser, targetUserId, User.Role.ADMIN);
+        List<NoteResponseDto> notes = noteMongoRepository.findByUserId(targetUserId).stream()
                 .map(NoteResponseDto::fromEntity)
                 .toList();
         return ResponseEntity.ok(notes);
     }
 
     public record UpsertNoteRequest(
-            @NotNull UUID userId,
+            @NotBlank String userId,
             @NotBlank String title,
             @NotBlank String contentMd,
-            @NotNull UUID topicId,
+            String topicId,
             String aiSummary,
             String aiEmbeddingsId,
             Boolean aiGenerated,
@@ -205,7 +214,7 @@ public class NoteController {
     public record PatchNoteRequest(
             String title,
             String contentMd,
-            UUID topicId,
+            String topicId,
             List<String> tags,
             Boolean isFavorite,
             Boolean isArchived
