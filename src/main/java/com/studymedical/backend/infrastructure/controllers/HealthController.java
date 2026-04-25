@@ -1,14 +1,23 @@
 package com.studymedical.backend.infrastructure.controllers;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 public class HealthController {
+
+    private final DataSource dataSource;
+
+    public HealthController(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     @GetMapping("/")
     public ResponseEntity<Map<String, Object>> getmap() {
@@ -34,5 +43,31 @@ public class HealthController {
                 "status", "UP",
                 "service", "Study Medical Backend"
         ));
+    }
+
+    @GetMapping("/api/v1/keep-alive")
+    public ResponseEntity<Map<String, Object>> keepAlive() {
+        try (Connection conn = dataSource.getConnection()) {
+            boolean isValid = conn.isValid(5);
+            return ResponseEntity.ok(Map.of(
+                    "status", "OK",
+                    "database", "connected",
+                    "timestamp", System.currentTimeMillis()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(503).body(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @Scheduled(fixedRate = 432000000)
+    public void scheduledKeepAlive() {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.isValid(5);
+        } catch (Exception e) {
+            // Silent log for scheduled task
+        }
     }
 }
