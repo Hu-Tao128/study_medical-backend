@@ -50,6 +50,19 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
+	// XML parsing (NIH responses)
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.0'
+
+	// HTML cleaning (MedlinePlus)
+	implementation 'org.jsoup:jsoup:1.18.1'
+
+	// Rate limiting
+	implementation 'io.github.bucket4j:bucket4j-core:8.10.1'
+
+	// Cache
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.postgresql:postgresql'
