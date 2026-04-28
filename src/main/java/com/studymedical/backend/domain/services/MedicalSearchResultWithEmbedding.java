@@ -2,7 +2,7 @@ package com.studymedical.backend.domain.services;
 
 import lombok.Data;
 
-@Data"
+@Data
 public class MedicalSearchResultWithEmbedding {
     private String id;
     private String chunkTitle;

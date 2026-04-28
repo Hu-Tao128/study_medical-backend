@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
-@Slf4j"
-@Service"
-@RequiredArgsConstructor"
+@Slf4j
+@Service
+@RequiredArgsConstructor
 public class NihSearchExecutor {
 
     private final PubMedClient pubMedClient;

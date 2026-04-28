@@ -2,6 +2,7 @@ package com.studymedical.backend.infrastructure.controllers;
 
 import com.studymedical.backend.application.usecases.search.RateLimitExceededException;
 import com.studymedical.backend.application.usecases.search.SearchUseCase;
+import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
 import com.studymedical.backend.infrastructure.dto.request.SearchQuery;
 import com.studymedical.backend.infrastructure.dto.response.SearchResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-@Slf4j"
-@RestController"
-@RequiredArgsConstructor"
+@Slf4j
+@RestController
+@RequiredArgsConstructor
 public class SearchController {
 
     private final SearchUseCase searchUseCase;
+    private final CreateUserUseCase createUserUseCase;
 
     @GetMapping("/api/v1/search")
     public ResponseEntity<SearchResponse> search(
@@ -37,9 +39,10 @@ public class SearchController {
         limit = Math.min(limit, 20); // máximo 20
         page = Math.max(page, 1);
 
-        // Extraer userId del token JWT
-        String authId = auth.getName();
-        UUID userId = UUID.fromString(authId); // Asumiendo que el sub del JWT es el UUID
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            return ResponseEntity.status(401).build();
+        }
+        UUID userId = createUserUseCase.normalizeAuthId(auth.getName());
 
         SearchQuery query = new SearchQuery();
         query.setQ(q.trim());

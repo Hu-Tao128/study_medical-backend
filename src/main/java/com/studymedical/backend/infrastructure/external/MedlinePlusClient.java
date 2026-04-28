@@ -10,9 +10,9 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j"
-@Service"
-@RequiredArgsConstructor"
+@Slf4j
+@Service
+@RequiredArgsConstructor
 public class MedlinePlusClient {
 
     private final RestTemplate restTemplate;

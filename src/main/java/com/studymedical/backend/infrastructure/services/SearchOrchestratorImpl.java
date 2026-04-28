@@ -12,15 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j"
-@Service"
-@RequiredArgsConstructor"
+@Slf4j
+@Service
+@RequiredArgsConstructor
 public class SearchOrchestratorImpl implements SearchOrchestrator {
 
     private final NihSearchExecutor nihSearchExecutor;
     private final LocalSearchExecutor localSearchExecutor;
 
-    @Override"
+    @Override
     public SearchOrchestrationResult execute(SearchQuery query, UUID userId) {
         List<MedicalSearchResult> nihResults = new ArrayList<>();
         List<MedicalSearchResult> localResults = new ArrayList<>();

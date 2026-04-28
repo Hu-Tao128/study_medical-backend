@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import java.sql.ResultSet;
 import java.util.List;
 
-@Slf4j"
-@Service"
-@RequiredArgsConstructor"
+@Slf4j
+@Service
+@RequiredArgsConstructor
 public class VectorSearchService {
 
     private final JdbcTemplate jdbcTemplate;
