@@ -1,24 +1,24 @@
 # API Documentation (Frontend Guide)
 
 Base URL: `http://<backend-host>/api/v1`  
-All endpoints return JSON. Most require JWT authentication.
+All endpoints return JSON. Most require JWT authentication via `Authorization: Bearer <token>` header.
 
 ---
 
 ## Authentication
 
 ### Token Format
-Include your JWT token in the `Authorization` header for protected endpoints:
+All protected endpoints require JWT authentication. Include the token in the `Authorization` header:
 
 ```
 Authorization: Bearer <your-jwt-token>
 ```
 
-### Get Token (Dev Mode Only)
-Use this endpoint to generate a test token (only works with `app.dev-mode=true`):
+### Development Mode (Dev Login)
+For development only (`app.dev-mode=true`), you can generate a test token:
 
+**POST `/api/v1/auth/dev-login`** - Auth: No (dev only)
 ```javascript
-// Frontend example
 const getDevToken = async () => {
   const response = await fetch('/api/v1/auth/dev-login', {
     method: 'POST',
@@ -32,6 +32,26 @@ const getDevToken = async () => {
   const data = await response.json();
   localStorage.setItem('jwt_token', data.accessToken);
   return data;
+};
+```
+
+### Production Authentication
+In production, the backend expects a valid JWT from your auth provider (Supabase/Firebase). The token must be:
+- A valid JWT with proper signature
+- Sent as: `Authorization: Bearer <token>`
+- Contains claims: `sub` (user ID), `email`, `name` (optional)
+
+**POST `/api/v1/auth/sync-session`** - Auth: Required
+Syncs user session with backend, creates/updates user record:
+```javascript
+const syncSession = async () => {
+  const token = localStorage.getItem('jwt_token');
+  const response = await fetch('/api/v1/auth/sync-session', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) throw new Error('Token invalido');
+  return response.json();
 };
 ```
 
@@ -55,12 +75,17 @@ fetch('/').then(r => r.json()) // Returns service metadata
 - Check service status
 - Success: 200 `{ "status": "UP", "service": "Study Medical Backend" }`
 
+#### GET `/keep-alive`
+- Auth: No
+- Database connection check
+- Success: 200 `{ "status": "OK", "database": "connected" }`
+
 ---
 
-### 2. Search Endpoint (Updated)
+### 2. Search Endpoint
 
 #### GET `/search`
-- Auth: **Required** (JWT Bearer)
+- **Auth: Required (JWT Bearer)**
 - Description: Search medical content across NIH/local sources with caching
 
 **Query Parameters:**
@@ -122,7 +147,7 @@ const searchMedical = async (query, source = 'all', limit = 5, page = 1) => {
 
 #### PATCH `/profile/me`
 - Auth: Required
-- Body: `UpdateProfileRequest` (displayName, photoUrl, preferredLanguage, theme, level, semester, career)
+- Body: `{ displayName?, photoUrl?, preferredLanguage?, theme?, level?, semester?, career? }`
 - Success: 200 updated profile
 - Error: 401, 404 (user not found)
 
@@ -139,51 +164,208 @@ const searchMedical = async (query, source = 'all', limit = 5, page = 1) => {
 
 ### 5. Note Endpoints
 
+All note endpoints require authentication and return 401 if token is invalid.
+
 #### GET `/notes`
 - Auth: Required
-- Query Param: `topicId` (optional)
+- Query Param: `topicId` (optional, UUID)
 - Returns notes for current user, filtered by topic if provided
+- Success: 200 `[ NoteResponseDto ]`
 
 #### POST `/notes`
 - Auth: Required
-- Body: `UpsertNoteRequest` (title, contentMd, topicId, tags, etc.)
+- Body: `{ title, contentMd, topicId?, tags?, aiSummary?, aiGenerated?, ... }`
 - Success: 200 created note
 
-#### GET/PUT/PATCH/DELETE `/notes/{id}`
+#### GET `/notes/{id}`
 - Auth: Required
-- Standard CRUD operations for notes
-- Error: 404 (note not found), 403 (no access)
+- Get specific note by ID
+- Success: 200 `NoteResponseDto`
+- Error: 404 (not found), 403 (no access)
+
+#### PUT `/notes/{id}`
+- Auth: Required
+- Body: Full update (all fields)
+- Success: 200 updated note
+- Error: 404, 403
+
+#### PATCH `/notes/{id}`
+- Auth: Required
+- Body: Partial update (any fields optional)
+- Success: 200 updated note
+- Error: 404, 403
+
+#### DELETE `/notes/{id}`
+- Auth: Required
+- Deletes note
+- Success: 204 No Content
+- Error: 404, 403
 
 ---
 
 ### 6. Quiz Endpoints
 
+All quiz endpoints require authentication. Creation requires TEACHER or ADMIN role.
+
 #### POST `/quizzes/ai-generate`
 - Auth: Required (TEACHER/ADMIN role)
-- Body: `GenerateQuizRequest` (title, topicId, questions, visibility)
-- Generates AI quiz
+- Body: `{ title, topicId, questions?, visibility?, groupId? }`
+- Generates quiz
+- Success: 200 `QuizResponseDto`
 
 #### POST `/quizzes/{quizId}/submit`
 - Auth: Required
-- Body: `SubmitQuizRequest` (userId, answers)
-- Returns quiz results
+- Body: `{ userId, answers: [int] }`
+- Returns quiz results with score
+- Success: 200 `SubmitQuizResult`
 
 #### GET `/quizzes/topic/{topicId}`
 - Auth: Required
-- Returns quizzes for a topic, filtered by visibility
+- Returns quizzes for a topic, filtered by visibility (PRIVATE/GROUP/PUBLIC)
+- Success: 200 `[ QuizResponseDto ]`
+
+#### GET `/quizzes/{id}`
+- Auth: Required
+- Get specific quiz by ID
+- Success: 200 `QuizResponseDto`
+- Error: 404, 403
+
+#### PUT `/quizzes/{id}`
+- Auth: Required (creator or ADMIN)
+- Body: Full quiz update
+- Success: 200 updated quiz
+- Error: 404, 403
+
+#### DELETE `/quizzes/{id}`
+- Auth: Required (creator or ADMIN)
+- Success: 204 No Content
+- Error: 404, 403
 
 ---
 
 ### 7. Flashcard Endpoints
 
+All flashcard endpoints require authentication. Creation requires TEACHER or ADMIN role.
+
 #### POST `/flashcards`
 - Auth: Required (TEACHER/ADMIN role)
-- Body: `CreateFlashcardRequest` (question, answer, difficulty, topicId)
-- Creates flashcards
+- Body: `{ topicId, question, answer, difficulty?, visibility?, groupId?, tags? }`
+- Creates flashcard
+- Success: 200 `FlashcardResponseDto`
 
 #### GET `/flashcards/topic/{topicId}`
 - Auth: Required
 - Returns flashcards for a topic, filtered by visibility
+- Success: 200 `[ FlashcardResponseDto ]`
+
+#### GET `/flashcards/{id}`
+- Auth: Required
+- Get specific flashcard
+- Success: 200 `FlashcardResponseDto`
+- Error: 404, 403
+
+#### PUT `/flashcards/{id}`
+- Auth: Required (creator or ADMIN)
+- Body: Full update
+- Success: 200 updated flashcard
+- Error: 404, 403
+
+#### DELETE `/flashcards/{id}`
+- Auth: Required (creator or ADMIN)
+- Success: 204 No Content
+- Error: 404, 403
+
+---
+
+### 8. Clinical Case Endpoints
+
+All clinical case endpoints require authentication. Creation requires TEACHER or ADMIN role.
+
+#### POST `/cases`
+- Auth: Required (TEACHER/ADMIN role)
+- Body: `{ title, description, symptoms?, diagnosis, questions?, topicId, difficulty?, visibility?, groupId? }`
+- Creates clinical case
+- Success: 200 `ClinicalCaseResponseDto`
+
+#### GET `/cases/topic/{topicId}`
+- Auth: Required
+- Returns clinical cases for a topic, filtered by visibility
+- Success: 200 `[ ClinicalCaseResponseDto ]`
+
+#### GET `/cases/{id}`
+- Auth: Required
+- Get specific clinical case
+- Success: 200 `ClinicalCaseResponseDto`
+- Error: 404, 403
+
+#### PUT `/cases/{id}`
+- Auth: Required (creator or ADMIN)
+- Body: Full update
+- Success: 200 updated case
+- Error: 404, 403
+
+#### DELETE `/cases/{id}`
+- Auth: Required (creator or ADMIN)
+- Success: 204 No Content
+- Error: 404, 403
+
+---
+
+### 9. Study Session Endpoints
+
+All study session endpoints require authentication.
+
+#### POST `/study-sessions/start`
+- Auth: Required
+- Body: `{ topicId, mode?, limit? }`
+- Starts a new study session with flashcards
+- Success: 200 `{ sessionId, cards: [{ cardId, question, tags }] }`
+
+#### POST `/study-sessions/submit`
+- Auth: Required
+- Body: `{ sessionId, topicId, attempts: [{ cardId, difficulty, correct, timeMs }] }`
+- Submits study session results
+- Success: 200 `SubmitStudySessionResult` with accuracy and stats
+
+#### GET `/study-sessions`
+- Auth: Required
+- Query Param: `topicId` (optional)
+- Returns user's study session history
+- Success: 200 `[ StudySessionDto ]`
+
+---
+
+### 10. Progress Endpoints
+
+All progress endpoints require authentication.
+
+#### GET `/progress`
+- Auth: Required
+- Query Param: `topicId` (required, UUID)
+- Returns study progress for a topic
+- Success: 200 `{ accuracy, attempts, lastStudiedAt }`
+
+#### GET `/progress/radar`
+- Auth: Required
+- Returns progress radar data across all topics
+- Success: 200 `{ topics: [{ topicId, name, accuracy }] }`
+
+---
+
+### 11. Chat Endpoints
+
+All chat endpoints require authentication and group access.
+
+#### POST `/chat/{roomId}/messages`
+- Auth: Required (must be group member)
+- Body: `{ senderId, text, type? }`
+- Sends a chat message to a study group room
+- Success: 200 `ChatMessageBucketResponseDto`
+
+#### GET `/chat/{roomId}/history`
+- Auth: Required (must be group member)
+- Returns chat history for a room
+- Success: 200 `[ MessageDto ]`
 
 ---
 
@@ -192,18 +374,23 @@ const searchMedical = async (query, source = 'all', limit = 5, page = 1) => {
 | Code | Meaning | Frontend Handling |
 |------|---------|-------------------|
 | 200 | Success | Parse response JSON |
+| 201 | Created | Parse response JSON |
+| 204 | No Content | No body to parse |
 | 400 | Bad Request | Show validation error to user |
-| 401 | Unauthorized | Redirect to login |
+| 401 | Unauthorized | Token invalid/missing - redirect to login |
 | 403 | Forbidden | Show "No access" message |
 | 404 | Not Found | Show "Resource not found" |
-| 429 | Rate Limited | Show retry message, backoff |
+| 429 | Rate Limited | Show retry message, implement backoff |
 | 500 | Server Error | Show generic error, log to monitoring |
 
 ---
 
 ## Notes
 
-- Search results are cached in-memory: repeated identical queries return instantly
-- All authenticated endpoints use `Jwt` tokens from OAuth2/your auth provider
-- Dev mode endpoints are disabled in production (`app.dev-mode=false`)
-- Search cache uses adaptive TTL: popular queries (diabetes, hypertension, etc.) cached for 60 min, others for 10 min
+- **Search results are cached in-memory**: repeated identical queries return instantly
+- **JWT tokens are required for all endpoints except**: `/`, `/health`, `/keep-alive`, `/auth/dev-login` (dev only), `/auth/sync-session`, `/profile/**`, `/study-sessions/**`, `/progress/**`
+- **Token extraction**: Backend extracts JWT from `Authorization: Bearer <token>` header OR from Spring Security's `@AuthenticationPrincipal Jwt`
+- **Dev mode endpoints are disabled in production** (`app.dev-mode=false`)
+- **Search cache uses adaptive TTL**: popular queries (diabetes, hypertension, etc.) cached for 60 min, others for 10 min
+- **Role-based access**: TEACHER/ADMIN roles required for creating quizzes, flashcards, and clinical cases
+- **Visibility system**: Resources can be PRIVATE (only creator), GROUP (group members), or PUBLIC (all authenticated users)
