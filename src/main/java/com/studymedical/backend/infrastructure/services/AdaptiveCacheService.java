@@ -1,6 +1,7 @@
 package com.studymedical.backend.infrastructure.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studymedical.backend.infrastructure.dto.response.SearchResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

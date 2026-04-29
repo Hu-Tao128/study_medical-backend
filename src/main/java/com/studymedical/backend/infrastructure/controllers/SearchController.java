@@ -2,17 +2,17 @@ package com.studymedical.backend.infrastructure.controllers;
 
 import com.studymedical.backend.application.usecases.search.RateLimitExceededException;
 import com.studymedical.backend.application.usecases.search.SearchUseCase;
-import com.studymedical.backend.application.usecases.user.CreateUserUseCase;
+import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.infrastructure.dto.request.SearchQuery;
 import com.studymedical.backend.infrastructure.dto.response.SearchResponse;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
+import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import com.studymedical.backend.infrastructure.services.AdaptiveCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,20 +31,19 @@ public class SearchController {
     private static final int MAX_QUERY_LENGTH = 100;
 
     private final SearchUseCase searchUseCase;
-    private final CreateUserUseCase createUserUseCase;
+    private final RoleAuthorizationService roleAuthorizationService;
     private final AdaptiveCacheService adaptiveCacheService;
 
     @GetMapping
     public ResponseEntity<?> search(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestParam String q,
             @RequestParam(defaultValue = "all") String source,
             @RequestParam(defaultValue = "5") int limit,
             @RequestParam(defaultValue = "1") int page) {
 
         // Validar autenticación
-        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+        if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Token invalido"));
         }
 
@@ -66,7 +65,8 @@ public class SearchController {
         limit = Math.min(limit, 20);
         page = Math.max(page, 1);
 
-        UUID userId = createUserUseCase.normalizeAuthId(jwt.getSubject());
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
+        UUID userId = currentUser.getId();
 
         SearchQuery query = new SearchQuery();
         query.setQ(trimmedQuery);

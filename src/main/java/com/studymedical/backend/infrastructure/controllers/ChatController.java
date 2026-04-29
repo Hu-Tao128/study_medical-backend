@@ -5,6 +5,7 @@ import com.studymedical.backend.application.usecases.chat.SendMessageUseCase;
 import com.studymedical.backend.domain.entities.ChatMessageBucket;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.infrastructure.dto.response.ChatMessageBucketResponseDto;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +13,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,12 +29,11 @@ public class ChatController {
 
     @PostMapping("/{roomId}/messages")
     public ResponseEntity<ChatMessageBucketResponseDto> sendMessage(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID roomId,
             @Valid @RequestBody SendMessageRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireSelfOrRole(currentUser, request.senderId(), User.Role.ADMIN);
         roleAuthorizationService.requireGroupAccess(currentUser, roomId);
 
@@ -50,11 +49,10 @@ public class ChatController {
 
     @GetMapping("/{roomId}/history")
     public ResponseEntity<List<ChatMessageBucketResponseDto.MessageDto>> getHistory(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID roomId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireGroupAccess(currentUser, roomId);
         List<ChatMessageBucketResponseDto.MessageDto> messages = getChatHistoryUseCase.execute(roomId).stream()
                 .map(ChatMessageBucketResponseDto.MessageDto::fromEntity)

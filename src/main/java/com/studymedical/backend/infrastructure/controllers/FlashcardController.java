@@ -6,6 +6,7 @@ import com.studymedical.backend.domain.entities.Flashcard;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.FlashcardMongoRepository;
 import com.studymedical.backend.infrastructure.dto.response.FlashcardResponseDto;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +14,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,11 +32,10 @@ public class FlashcardController {
 
     @PostMapping
     public ResponseEntity<FlashcardResponseDto> createFlashcard(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody CreateFlashcardRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         Flashcard flashcard = Flashcard.builder()
@@ -63,11 +62,10 @@ public class FlashcardController {
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<List<FlashcardResponseDto>> getByTopic(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         List<FlashcardResponseDto> filtered = getFlashcardsByTopicUseCase.execute(topicId).stream()
                 .filter(card -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
@@ -82,11 +80,10 @@ public class FlashcardController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         return flashcardMongoRepository.findById(id)
                 .map(card -> {
@@ -106,12 +103,11 @@ public class FlashcardController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id,
             @Valid @RequestBody CreateFlashcardRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         return flashcardMongoRepository.findById(id)
@@ -137,11 +133,10 @@ public class FlashcardController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         return flashcardMongoRepository.findById(id)
                 .map(existing -> {
                     roleAuthorizationService.requireSelfOrRole(currentUser, existing.getCreatedBy(), User.Role.ADMIN);

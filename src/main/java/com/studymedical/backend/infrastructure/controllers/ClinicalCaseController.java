@@ -5,6 +5,7 @@ import com.studymedical.backend.domain.entities.Flashcard;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.ClinicalCaseMongoRepository;
 import com.studymedical.backend.infrastructure.dto.response.ClinicalCaseResponseDto;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +13,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,11 +29,10 @@ public class ClinicalCaseController {
 
     @PostMapping
     public ResponseEntity<ClinicalCaseResponseDto> createCase(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody CreateClinicalCaseRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         List<ClinicalCase.CaseQuestion> questions = request.questions() == null
@@ -75,11 +74,10 @@ public class ClinicalCaseController {
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<List<ClinicalCaseResponseDto>> getByTopic(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         List<ClinicalCaseResponseDto> filtered = clinicalCaseMongoRepository.findByTopicId(topicId).stream()
                 .filter(clinicalCase -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
@@ -94,11 +92,10 @@ public class ClinicalCaseController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ClinicalCaseResponseDto> getById(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         ClinicalCase clinicalCase = clinicalCaseMongoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Caso clinico no encontrado"));
@@ -119,12 +116,11 @@ public class ClinicalCaseController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ClinicalCaseResponseDto> updateCase(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id,
             @Valid @RequestBody CreateClinicalCaseRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         ClinicalCase existing = clinicalCaseMongoRepository.findById(id)
@@ -164,11 +160,10 @@ public class ClinicalCaseController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCase(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         ClinicalCase existing = clinicalCaseMongoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Caso clinico no encontrado"));

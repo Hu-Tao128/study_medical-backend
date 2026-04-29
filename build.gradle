@@ -57,7 +57,10 @@ dependencies {
 	implementation 'org.jsoup:jsoup:1.18.1'
 
 	// Rate limiting
-	implementation 'io.github.bucket4j:bucket4j-core:8.10.1'
+	implementation 'com.bucket4j:bucket4j-core:8.10.1'
+
+	// Firebase Admin SDK
+	implementation 'com.google.firebase:firebase-admin:9.4.2'
 
 	// Cache
 	implementation 'org.springframework.boot:spring-boot-starter-cache'

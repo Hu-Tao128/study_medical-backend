@@ -5,13 +5,13 @@ import com.studymedical.backend.domain.entities.Note;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.NoteMongoRepository;
 import com.studymedical.backend.infrastructure.dto.response.NoteResponseDto;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,11 +28,10 @@ public class NoteController {
 
     @PostMapping
     public ResponseEntity<NoteResponseDto> createNote(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody UpsertNoteRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         
         // Usamos el ID interno del usuario autenticado para la nota
         UUID targetUserId = currentUser.getId();
@@ -62,11 +61,10 @@ public class NoteController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         return noteMongoRepository.findById(id)
                 .map(note -> {
@@ -78,11 +76,10 @@ public class NoteController {
 
     @GetMapping
     public ResponseEntity<List<NoteResponseDto>> listNotes(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestParam(value = "topicId", required = false) String topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         UUID targetTopicId = (topicId != null && !topicId.isBlank()) ? createUserUseCase.normalizeAuthId(topicId) : null;
 
         List<Note> notes = targetTopicId == null
@@ -94,12 +91,11 @@ public class NoteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateNote(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id,
             @Valid @RequestBody UpsertNoteRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         return noteMongoRepository.findById(id)
                 .map(existing -> {
@@ -128,12 +124,11 @@ public class NoteController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<?> patchNote(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id,
             @Valid @RequestBody PatchNoteRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         return noteMongoRepository.findById(id)
                 .map(existing -> {
@@ -165,11 +160,10 @@ public class NoteController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteNote(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         return noteMongoRepository.findById(id)
                 .map(existing -> {
@@ -182,11 +176,10 @@ public class NoteController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<NoteResponseDto>> getByUser(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String userId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         UUID targetAuthId = createUserUseCase.normalizeAuthId(userId);
         
         // Si el userId es el authId de Firebase, necesitamos buscar el usuario por authId

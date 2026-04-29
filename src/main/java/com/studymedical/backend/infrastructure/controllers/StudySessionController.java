@@ -5,13 +5,13 @@ import com.studymedical.backend.application.usecases.studysession.StartStudySess
 import com.studymedical.backend.application.usecases.studysession.SubmitStudySessionUseCase;
 import com.studymedical.backend.domain.entities.StudySession;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,11 +30,10 @@ public class StudySessionController {
 
     @PostMapping("/start")
     public ResponseEntity<StartStudySessionResponse> start(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody StartStudySessionRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         StartStudySessionUseCase.StartStudySessionResult result = startStudySessionUseCase.execute(
                 currentUser.getId(),
@@ -52,11 +51,10 @@ public class StudySessionController {
 
     @PostMapping("/submit")
     public ResponseEntity<SubmitStudySessionUseCase.SubmitStudySessionResult> submit(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody SubmitStudySessionRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
 
         List<SubmitStudySessionUseCase.Attempt> attempts = request.attempts() == null
                 ? List.of()
@@ -76,11 +74,10 @@ public class StudySessionController {
 
     @GetMapping
     public ResponseEntity<List<StudySessionDto>> list(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestParam(value = "topicId", required = false) UUID topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         List<StudySessionDto> sessions = getStudySessionsUseCase.execute(currentUser.getId(), topicId).stream()
                 .map(StudySessionDto::fromEntity)
                 .toList();

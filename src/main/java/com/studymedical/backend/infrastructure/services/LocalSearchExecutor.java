@@ -3,6 +3,8 @@ package com.studymedical.backend.infrastructure.services;
 import com.studymedical.backend.domain.entities.MedicalChunk;
 import com.studymedical.backend.domain.entities.MedicalSearchResult;
 import com.studymedical.backend.domain.repositories.MedicalChunkRepository;
+import com.studymedical.backend.domain.services.SearchResultNormalizer;
+import com.studymedical.backend.domain.services.VectorSearchService;
 import com.studymedical.backend.infrastructure.dto.request.SearchQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

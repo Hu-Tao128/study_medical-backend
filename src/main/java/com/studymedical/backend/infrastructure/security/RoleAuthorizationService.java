@@ -41,6 +41,11 @@ public class RoleAuthorizationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no sincronizado"));
     }
 
+    public User requireAuthenticatedUser(AuthenticatedUser principal) {
+        return userRepository.findById(principal.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+    }
+
     public void requireAnyRole(User user, User.Role... roles) {
         boolean allowed = Arrays.stream(roles).anyMatch(role -> role == user.getRole());
         if (!allowed) {

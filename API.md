@@ -36,10 +36,16 @@ const getDevToken = async () => {
 ```
 
 ### Production Authentication
-In production, the backend expects a valid JWT from your auth provider (Supabase/Firebase). The token must be:
-- A valid JWT with proper signature
-- Sent as: `Authorization: Bearer <token>`
-- Contains claims: `sub` (user ID), `email`, `name` (optional)
+In production, authentication follows a two-step process:
+
+**Step 1: Firebase Token Exchange** (only for `/auth/sync-session`)
+- Send Firebase ID token as: `Authorization: Bearer <firebase-id-token>`
+- Backend verifies the Firebase token and issues backend JWTs
+
+**Step 2: Backend JWT Usage** (all other endpoints)
+- Use the access token from Step 1 as: `Authorization: Bearer <backend-access-token>`
+- Backend validates the JWT signature and extracts user claims
+- Token must contain: `sub` (user ID), `authId` (Firebase UID), `type` (ACCESS/REFRESH)
 
 **POST `/api/v1/auth/sync-session`** - Auth: Required
 Syncs user session with backend, creates/updates user record:
@@ -388,8 +394,8 @@ All chat endpoints require authentication and group access.
 ## Notes
 
 - **Search results are cached in-memory**: repeated identical queries return instantly
-- **JWT tokens are required for all endpoints except**: `/`, `/health`, `/keep-alive`, `/auth/dev-login` (dev only), `/auth/sync-session`, `/profile/**`, `/study-sessions/**`, `/progress/**`
-- **Token extraction**: Backend extracts JWT from `Authorization: Bearer <token>` header OR from Spring Security's `@AuthenticationPrincipal Jwt`
+- **JWT tokens are required for all endpoints except**: `/`, `/health`, `/keep-alive`, `/auth/dev-login` (dev only), `/auth/sync-session`
+- **Token extraction**: Backend extracts JWT from `Authorization: Bearer <token>` header only
 - **Dev mode endpoints are disabled in production** (`app.dev-mode=false`)
 - **Search cache uses adaptive TTL**: popular queries (diabetes, hypertension, etc.) cached for 60 min, others for 10 min
 - **Role-based access**: TEACHER/ADMIN roles required for creating quizzes, flashcards, and clinical cases

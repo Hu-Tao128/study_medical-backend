@@ -2,14 +2,13 @@ package com.studymedical.backend.infrastructure.controllers;
 
 import com.studymedical.backend.application.usecases.studysession.GetProgressUseCase;
 import com.studymedical.backend.domain.entities.User;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,21 +27,19 @@ public class ProgressController {
 
     @GetMapping
     public ResponseEntity<ProgressResponse> getByTopic(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestParam @NotNull UUID topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         GetProgressUseCase.ProgressResult result = getProgressUseCase.execute(currentUser.getId(), topicId);
         return ResponseEntity.ok(new ProgressResponse(result.accuracy(), result.attempts(), result.lastStudiedAt()));
     }
 
     @GetMapping("/radar")
     public ResponseEntity<RadarResponse> radar(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         GetProgressUseCase.RadarResult result = getProgressUseCase.executeRadar(currentUser.getId());
         List<RadarTopicResponse> topics = result.topics().stream()
                 .map(topic -> new RadarTopicResponse(topic.topicId(), topic.name(), topic.accuracy()))

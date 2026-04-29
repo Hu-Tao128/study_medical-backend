@@ -6,6 +6,7 @@ import com.studymedical.backend.domain.entities.Quiz;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.mongo.QuizMongoRepository;
 import com.studymedical.backend.infrastructure.dto.response.QuizResponseDto;
+import com.studymedical.backend.infrastructure.security.AuthenticatedUser;
 import com.studymedical.backend.infrastructure.security.RoleAuthorizationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +14,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,11 +32,10 @@ public class QuizController {
 
     @PostMapping("/ai-generate")
     public ResponseEntity<QuizResponseDto> generateQuiz(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody GenerateQuizRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         List<Quiz.QuizQuestion> questions = request.questions() == null
@@ -74,11 +73,10 @@ public class QuizController {
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<List<QuizResponseDto>> getByTopic(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID topicId
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         List<QuizResponseDto> filtered = quizMongoRepository.findByTopicId(topicId).stream()
                 .filter(quiz -> roleAuthorizationService.canReadByVisibility(
                         currentUser,
@@ -93,12 +91,11 @@ public class QuizController {
 
     @PostMapping("/{quizId}/submit")
     public ResponseEntity<SubmitQuizUseCase.SubmitQuizResult> submitQuiz(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String quizId,
             @Valid @RequestBody SubmitQuizRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireSelfOrRole(currentUser, request.userId(), User.Role.ADMIN, User.Role.TEACHER);
 
         Quiz quiz = quizMongoRepository.findById(quizId)
@@ -125,11 +122,10 @@ public class QuizController {
 
     @GetMapping("/{id}")
     public ResponseEntity<QuizResponseDto> getById(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         Quiz quiz = quizMongoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
 
@@ -149,12 +145,11 @@ public class QuizController {
 
     @PutMapping("/{id}")
     public ResponseEntity<QuizResponseDto> updateQuiz(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id,
             @Valid @RequestBody GenerateQuizRequest request
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         Quiz existing = quizMongoRepository.findById(id)
@@ -191,11 +186,10 @@ public class QuizController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuiz(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String id
     ) {
-        User currentUser = roleAuthorizationService.requireAuthenticatedUser(jwt, authHeader);
+        User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
         Quiz existing = quizMongoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz no encontrado"));
 

@@ -93,7 +93,7 @@ public class PubMedClient {
         List<String> authors = new ArrayList<>();
         JsonNode authorList = articleNode.path("AuthorList").path("Author");
         if (authorList.isArray()) {
-            authorList.forEach(a -> authors.add(a.path("LastName").asText("") + " " + a.path("Initials").asText("")).trim()));
+            authorList.forEach(a -> authors.add((a.path("LastName").asText("") + " " + a.path("Initials").asText("")).trim()));
         }
         article.setAuthors(authors);
         
