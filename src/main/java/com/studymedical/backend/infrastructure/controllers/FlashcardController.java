@@ -36,7 +36,11 @@ public class FlashcardController {
             @Valid @RequestBody CreateFlashcardRequest request
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
-        roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
+        roleAuthorizationService.requireContentVisibilityAllowed(
+                currentUser,
+                toSecurityVisibility(request.visibility()),
+                request.groupId()
+        );
 
         Flashcard flashcard = Flashcard.builder()
                 .topicId(request.topicId())
@@ -52,9 +56,6 @@ public class FlashcardController {
                 .aiSource(request.aiSource())
                 .aiEmbeddingsId(request.aiEmbeddingsId())
                 .build();
-        if (request.visibility() == Flashcard.Visibility.GROUP) {
-            roleAuthorizationService.requireGroupTeacherOrAdmin(currentUser, request.groupId());
-        }
 
         Flashcard created = createFlashcardUseCase.execute(flashcard);
         return ResponseEntity.ok(FlashcardResponseDto.fromEntity(created));
@@ -108,11 +109,15 @@ public class FlashcardController {
             @Valid @RequestBody CreateFlashcardRequest request
     ) {
         User currentUser = roleAuthorizationService.requireAuthenticatedUser(principal);
-        roleAuthorizationService.requireAnyRole(currentUser, User.Role.TEACHER, User.Role.ADMIN);
 
         return flashcardMongoRepository.findById(id)
                 .map(existing -> {
                     roleAuthorizationService.requireSelfOrRole(currentUser, existing.getCreatedBy(), User.Role.ADMIN);
+                    roleAuthorizationService.requireContentVisibilityAllowed(
+                            currentUser,
+                            toSecurityVisibility(request.visibility()),
+                            request.groupId()
+                    );
                     existing.setTopicId(request.topicId());
                     existing.setQuestion(request.question());
                     existing.setAnswer(request.answer());

@@ -84,6 +84,25 @@ public class RoleAuthorizationService {
         }
     }
 
+    /**
+     * Valida que el usuario pueda crear o editar contenido con la visibilidad pedida.
+     *
+     * <p>Cualquier usuario autenticado puede usar {@code PRIVATE}; {@code GROUP} exige ser
+     * teacher/admin del grupo; {@code PUBLIC} solo lo pueden crear teacher o admin.</p>
+     */
+    public void requireContentVisibilityAllowed(User user, QuizVisibility visibility, UUID groupId) {
+        if (visibility == null || visibility == QuizVisibility.PRIVATE) {
+            return;
+        }
+
+        if (visibility == QuizVisibility.GROUP) {
+            requireGroupTeacherOrAdmin(user, groupId);
+            return;
+        }
+
+        requireAnyRole(user, User.Role.TEACHER, User.Role.ADMIN);
+    }
+
     private Membership resolveMembership(User user, UUID groupId) {
         if (groupId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "groupId es requerido para visibilidad GROUP");

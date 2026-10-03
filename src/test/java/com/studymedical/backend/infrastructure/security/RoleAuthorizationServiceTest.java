@@ -160,4 +160,72 @@ class RoleAuthorizationServiceTest {
 
         assertFalse(allowed);
     }
+
+    @Test
+    void shouldAllowStudentToCreatePrivateContent() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        assertDoesNotThrow(() -> roleAuthorizationService.requireContentVisibilityAllowed(
+                student,
+                RoleAuthorizationService.QuizVisibility.PRIVATE,
+                null
+        ));
+    }
+
+    @Test
+    void shouldTreatNullVisibilityAsPrivateForStudents() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        assertDoesNotThrow(() -> roleAuthorizationService.requireContentVisibilityAllowed(
+                student,
+                null,
+                null
+        ));
+    }
+
+    @Test
+    void shouldRejectStudentFromCreatingPublicContent() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        assertThrows(ResponseStatusException.class, () ->
+                roleAuthorizationService.requireContentVisibilityAllowed(
+                        student,
+                        RoleAuthorizationService.QuizVisibility.PUBLIC,
+                        null
+                ));
+    }
+
+    @Test
+    void shouldRejectStudentFromCreatingGroupContent() {
+        User student = User.builder().id(UUID.randomUUID()).role(User.Role.STUDENT).build();
+
+        assertThrows(ResponseStatusException.class, () ->
+                roleAuthorizationService.requireContentVisibilityAllowed(
+                        student,
+                        RoleAuthorizationService.QuizVisibility.GROUP,
+                        UUID.randomUUID()
+                ));
+    }
+
+    @Test
+    void shouldAllowTeacherToCreatePublicContent() {
+        User teacher = User.builder().id(UUID.randomUUID()).role(User.Role.TEACHER).build();
+
+        assertDoesNotThrow(() -> roleAuthorizationService.requireContentVisibilityAllowed(
+                teacher,
+                RoleAuthorizationService.QuizVisibility.PUBLIC,
+                null
+        ));
+    }
+
+    @Test
+    void shouldAllowAdminToCreateGroupContent() {
+        User admin = User.builder().id(UUID.randomUUID()).role(User.Role.ADMIN).build();
+
+        assertDoesNotThrow(() -> roleAuthorizationService.requireContentVisibilityAllowed(
+                admin,
+                RoleAuthorizationService.QuizVisibility.GROUP,
+                UUID.randomUUID()
+        ));
+    }
 }
