@@ -56,6 +56,9 @@ dependencies {
 	// HTML cleaning (MedlinePlus)
 	implementation 'org.jsoup:jsoup:1.18.1'
 
+	// PDF text extraction (RAG: documentos del usuario)
+	implementation 'org.apache.pdfbox:pdfbox:3.0.3'
+
 	// Rate limiting
 	implementation 'com.bucket4j:bucket4j-core:8.10.1'
 

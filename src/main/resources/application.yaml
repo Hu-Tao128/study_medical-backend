@@ -4,6 +4,11 @@ spring:
   application:
     name: backend
 
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE:20MB}
+      max-request-size: ${MAX_UPLOAD_SIZE:20MB}
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
@@ -45,3 +50,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:study-medical-secret-key-2024-secure}
     expiration: 86400000
+  ai:
+    openai:
+      # Sin api-key el pipeline RAG de documentos queda deshabilitado (503).
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
