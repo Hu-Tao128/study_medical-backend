@@ -1,6 +1,7 @@
 package com.studymedical.backend.infrastructure.services;
 
 import com.studymedical.backend.domain.entities.MedicalSearchResult;
+import com.studymedical.backend.domain.services.SearchResultNormalizer;
 import com.studymedical.backend.infrastructure.dto.request.SearchQuery;
 import com.studymedical.backend.infrastructure.external.MedlinePlusClient;
 import com.studymedical.backend.infrastructure.external.MedlinePlusClient.MedlineDocument;

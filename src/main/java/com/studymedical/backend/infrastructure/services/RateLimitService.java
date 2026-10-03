@@ -1,5 +1,6 @@
 package com.studymedical.backend.infrastructure.services;
 
+import com.studymedical.backend.domain.entities.Institution;
 import com.studymedical.backend.domain.entities.User;
 import com.studymedical.backend.domain.repositories.UserRepository;
 import io.github.bucket4j.Bandwidth;
@@ -24,8 +25,7 @@ public class RateLimitService {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return false;
 
-        boolean isPremium = user.getPlan() != null && user.getPlan().equals("premium");
-        int limit = isPremium ? 10 : 3; // requests per minute
+        int limit = isPremium(user) ? 10 : 3; // requests per minute
 
         Bucket bucket = buckets.computeIfAbsent(userId,
             id -> Bucket.builder()
@@ -36,7 +36,18 @@ public class RateLimitService {
     }
 
     public boolean isPremium(UUID userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        return user != null && user.getPlan() != null && user.getPlan().equals("premium");
+        return userRepository.findById(userId).map(this::isPremium).orElse(false);
+    }
+
+    /**
+     * Un usuario es premium si pertenece a una institución con plan PRO o ENTERPRISE.
+     * El plan vive en {@link Institution} (valores FREE/PRO/ENTERPRISE).
+     */
+    private boolean isPremium(User user) {
+        Institution institution = user.getInstitution();
+        if (institution == null || institution.getPlan() == null) {
+            return false;
+        }
+        return institution.getPlan() != Institution.Plan.FREE;
     }
 }
